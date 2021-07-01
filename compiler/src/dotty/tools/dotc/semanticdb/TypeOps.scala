@@ -7,7 +7,7 @@ import core.Contexts.Context
 import core.Types._
 import core.Annotations.Annotation
 import core.Flags
-import core.Names.Name
+import core.Names.{Name, TypeName}
 import core.StdNames.tpnme
 import ast.tpd._
 
@@ -105,22 +105,29 @@ class TypeOps:
           s.ClassSignature(stparams, sparents, sself, Some(decls))
 
         case TypeBounds(lo, hi) =>
+          // oops we have no way to distinguish
+          // type X[T] = T and type X = [T] =>> T
+
           // for `type X[T] = T` is equivalent to `[T] =>> T`
-          def tparams(tpe: Type): (Type, List[Symbol]) = tpe match {
-            case lambda: HKTypeLambda =>
-              val paramSyms = lambda.paramNames.flatMap { paramName =>
-                paramRefSymtab.get((lambda, paramName))
-              }
-              (lambda.resType, paramSyms)
-            case _ => (tpe, Nil)
-          }
-          val (loRes, loParams) = tparams(lo)
-          val (hiRes, hiParams) = tparams(hi)
-          val params = (loParams ++ hiParams).distinctBy(_.name)
-          val slo = loRes.toSemanticType(sym)
-          val shi = hiRes.toSemanticType(sym)
-          val stparams = params.sscope
-          s.TypeSignature(Some(stparams), slo, shi)
+          // println("===")
+          // println(sym)
+          // println(sym.flagsString)
+          // def tparams(tpe: Type): (Type, List[Symbol]) = tpe match {
+          //   case lambda: HKTypeLambda =>
+          //     lambda.dealias
+          //     val paramSyms = lambda.paramNames.flatMap { paramName =>
+          //       paramRefSymtab.get((lambda, paramName))
+          //     }
+          //     (lambda.resType, paramSyms)
+          //   case _ => (tpe, Nil)
+          // }
+          // val (loRes, loParams) = tparams(lo)
+          // val (hiRes, hiParams) = tparams(hi)
+          // val params = (loParams ++ hiParams).distinctBy(_.name)
+          val slo = lo.toSemanticType(sym)
+          val shi = hi.toSemanticType(sym)
+          // val stparams = params.sscope
+          s.TypeSignature(Some(s.Scope()), slo, shi)
 
         case pt: PolyType =>
           loop(pt.resType) match {
@@ -191,6 +198,24 @@ class TypeOps:
 
         case ConstantType(const) =>
           s.ConstantType(const.toSemanticConst)
+
+        case lam: HKTypeLambda =>
+          def flatten(lambda: HKTypeLambda, acc: List[List[TypeName]]): (List[List[TypeName]], Type) = {
+            lambda.resType match {
+              case res: HKTypeLambda => flatten(res, acc :+ res.paramNames)
+              case other => (acc, other)
+            }
+          }
+          val (paramNamess, resType) = flatten(lam, Nil)
+          val paramSymss = paramNamess.map { paramNames =>
+            paramNames.flatMap { paramName =>
+              val key = (lam, paramName)
+              paramRefSymtab.get(key)
+            }
+          }
+          val stparamss = paramSymss.map(_.sscope)
+          val sresTpe = loop(resType)
+          s.TypeLambda(stparamss, sresTpe)
 
         case rt @ RefinedType(parent, name, info) =>
           // `X { def x: Int; def y: Int }`

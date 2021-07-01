@@ -449,7 +449,7 @@ classes/C11#foo(). => macro foo => Int
 classes/C11#foo(). => macro foo => Int
 classes/C12# => class C12 extends Object { self: C12 => +8 decls }
 classes/C12#Context# => class Context extends Object { self: Context => +2 decls }
-classes/C12#Context#Expr# => type Expr [typeparam T ]
+classes/C12#Context#Expr# => type Expr 
 classes/C12#Context#Expr#[T] => typeparam T 
 classes/C12#Context#`<init>`(). => primary ctor <init> (): Context
 classes/C12#`<init>`(). => primary ctor <init> (): C12
@@ -2198,7 +2198,7 @@ Occurrences => 156 entries
 
 Symbols:
 example/Methods# => class Methods [typeparam T ] extends Object { self: Methods[T] => +44 decls }
-example/Methods#AList# => type AList [typeparam T ] = List[T]
+example/Methods#AList# => type AList  = <?>
 example/Methods#AList#[T] => typeparam T 
 example/Methods#List# => class List [typeparam T ] extends Object { self: List[T] => +2 decls }
 example/Methods#List#[T] => typeparam T 
@@ -3183,6 +3183,110 @@ Occurrences:
 [12:10..12:10): <- traits/V#`<init>`().
 [12:16..12:17): C -> traits/C#
 
+expect/TypeLambda.scala
+-----------------------
+
+Summary:
+Schema => SemanticDB v4
+Uri => TypeLambda.scala
+Text => empty
+Language => Scala
+Symbols => 29 entries
+Occurrences => 60 entries
+
+Symbols:
+example/TypeLambda$package. => final package object example extends Object { self: <?>.example.type => +13 decls }
+example/TypeLambda$package.AList# => type AList  = <?>
+example/TypeLambda$package.AList#[X] => typeparam X 
+example/TypeLambda$package.B1# => type B1  = <?>
+example/TypeLambda$package.B1#[X] => typeparam X 
+example/TypeLambda$package.B2# => type B2  = <?>
+example/TypeLambda$package.B2#[X] => typeparam X  >: Int
+example/TypeLambda$package.MapKV# => type MapKV  = <?>
+example/TypeLambda$package.MapKV#[K] => typeparam K 
+example/TypeLambda$package.MapKV#[V] => typeparam V 
+example/TypeLambda$package.T1# => type T1  = <?>
+example/TypeLambda$package.T1#[X] => typeparam X 
+example/TypeLambda$package.T2# => type T2  = <?>
+example/TypeLambda$package.T2#[X] => typeparam X 
+example/TypeLambda$package.T3# => type T3  = <?>
+example/TypeLambda$package.T3#[X] => typeparam X 
+example/TypeLambda$package.T4# => type T4  = <?>
+example/TypeLambda$package.T4#[X] => typeparam X 
+example/TypeLambda$package.T4#[Y] => typeparam Y 
+example/TypeLambda$package.Tuple# => type Tuple  = <?>
+example/TypeLambda$package.Tuple#[X] => typeparam X 
+example/TypeLambda$package.Tuple#[Y] => typeparam Y 
+example/TypeLambda$package.TupleIntString# => type TupleIntString  = Tuple[String]
+example/TypeLambda$package.Union# => type Union  = <?>
+example/TypeLambda$package.Union#[A] => typeparam A 
+example/TypeLambda$package.Union#[B] => typeparam B 
+example/TypeLambda$package.Union#[C] => typeparam C 
+example/TypeLambda$package.V1# => type V1  = <?>
+example/TypeLambda$package.V1#[X] => covariant typeparam X 
+
+Occurrences:
+[0:8..0:15): example <- example/
+[2:5..2:7): T1 <- example/TypeLambda$package.T1#
+[2:11..2:12): X <- example/TypeLambda$package.T1#[X]
+[2:18..2:19): X -> example/TypeLambda$package.T1#[X]
+[3:5..3:7): T2 <- example/TypeLambda$package.T2#
+[3:11..3:12): X <- example/TypeLambda$package.T2#[X]
+[3:18..3:22): List -> scala/package.List#
+[3:23..3:24): X -> example/TypeLambda$package.T2#[X]
+[4:5..4:7): T3 <- example/TypeLambda$package.T3#
+[4:11..4:12): X <- example/TypeLambda$package.T3#[X]
+[4:18..4:21): Map -> scala/Predef.Map#
+[4:22..4:28): String -> scala/Predef.String#
+[4:30..4:31): X -> example/TypeLambda$package.T3#[X]
+[5:5..5:7): T4 <- example/TypeLambda$package.T4#
+[5:11..5:12): X <- example/TypeLambda$package.T4#[X]
+[5:14..5:15): Y <- example/TypeLambda$package.T4#[Y]
+[5:21..5:24): Map -> scala/Predef.Map#
+[5:25..5:26): Y -> example/TypeLambda$package.T4#[Y]
+[5:28..5:29): X -> example/TypeLambda$package.T4#[X]
+[7:5..7:7): B1 <- example/TypeLambda$package.B1#
+[7:8..7:9): X <- example/TypeLambda$package.B1#[X]
+[7:13..7:19): String -> scala/Predef.String#
+[7:23..7:24): X -> example/TypeLambda$package.B1#[X]
+[8:5..8:7): B2 <- example/TypeLambda$package.B2#
+[8:8..8:9): X <- example/TypeLambda$package.B2#[X]
+[8:13..8:16): Int -> scala/Int#
+[8:20..8:23): Any -> scala/Any#
+[10:5..10:7): V1 <- example/TypeLambda$package.V1#
+[10:9..10:10): X <- example/TypeLambda$package.V1#[X]
+[10:14..10:15): X -> example/TypeLambda$package.V1#[X]
+[10:19..10:20): X -> example/TypeLambda$package.V1#[X]
+[10:24..10:27): Any -> scala/Any#
+[12:5..12:10): AList <- example/TypeLambda$package.AList#
+[12:11..12:12): X <- example/TypeLambda$package.AList#[X]
+[12:16..12:20): List -> scala/package.List#
+[12:21..12:22): X -> example/TypeLambda$package.AList#[X]
+[14:5..14:10): Union <- example/TypeLambda$package.Union#
+[14:14..14:15): A <- example/TypeLambda$package.Union#[A]
+[14:22..14:23): B <- example/TypeLambda$package.Union#[B]
+[14:30..14:31): C <- example/TypeLambda$package.Union#[C]
+[14:37..14:38): A -> example/TypeLambda$package.Union#[A]
+[14:39..14:40): | -> scala/`|`#
+[14:41..14:42): B -> example/TypeLambda$package.Union#[B]
+[14:43..14:44): | -> scala/`|`#
+[14:45..14:46): C -> example/TypeLambda$package.Union#[C]
+[15:5..15:10): MapKV <- example/TypeLambda$package.MapKV#
+[15:14..15:15): K <- example/TypeLambda$package.MapKV#[K]
+[15:22..15:23): V <- example/TypeLambda$package.MapKV#[V]
+[15:29..15:32): Map -> scala/Predef.Map#
+[15:33..15:34): K -> example/TypeLambda$package.MapKV#[K]
+[15:36..15:37): V -> example/TypeLambda$package.MapKV#[V]
+[17:5..17:10): Tuple <- example/TypeLambda$package.Tuple#
+[17:14..17:15): X <- example/TypeLambda$package.Tuple#[X]
+[17:22..17:23): Y <- example/TypeLambda$package.Tuple#[Y]
+[17:30..17:31): X -> example/TypeLambda$package.Tuple#[X]
+[17:33..17:34): Y -> example/TypeLambda$package.Tuple#[Y]
+[18:5..18:19): TupleIntString <- example/TypeLambda$package.TupleIntString#
+[18:22..18:27): Tuple -> example/TypeLambda$package.Tuple#
+[18:28..18:31): Int -> scala/Int#
+[18:33..18:39): String -> scala/Predef.String#
+
 expect/ValPattern.scala
 -----------------------
 
@@ -3589,9 +3693,9 @@ Occurrences => 5 entries
 
 Symbols:
 exports/`exports-package$package`. => final package object exports extends Object { self: <?>.exports.type => +4 decls }
-exports/`exports-package$package`.Codec# => final type Codec  = Codec[<?>]
-exports/`exports-package$package`.Decoder# => final type Decoder  = Decoder[<?>]
-exports/`exports-package$package`.Encoder# => final type Encoder  = Encoder[<?>]
+exports/`exports-package$package`.Codec# => final type Codec  = <?>
+exports/`exports-package$package`.Decoder# => final type Decoder  = <?>
+exports/`exports-package$package`.Encoder# => final type Encoder  = <?>
 
 Occurrences:
 [0:8..0:15): exports <- exports/
@@ -3918,7 +4022,7 @@ flags/p/package.S# => class S [typeparam T ] extends Object { self: S[T] => +2 d
 flags/p/package.S#[T] => typeparam T 
 flags/p/package.S#`<init>`(). => primary ctor <init> [unknown T: <?>]: S[T]
 flags/p/package.T1# => type T1  = Int
-flags/p/package.T2# => type T2 [typeparam T ] = S[T]
+flags/p/package.T2# => type T2  = <?>
 flags/p/package.T2#[T] => typeparam T 
 flags/p/package.U# => type U 
 flags/p/package.V# => type V  >: Int
@@ -4043,7 +4147,7 @@ local5 => final class $anon extends M with N { self: $anon => +1 decls }
 local7 => method k => Int
 local8 => final class $anon extends M with N { self: $anon => +2 decls }
 local10 => typeparam T 
-local11 => type L [typeparam T ] = List[T]
+local11 => type L  = <?>
 types/B# => class B extends Object { self: B => +1 decls }
 types/B#`<init>`(). => primary ctor <init> (): B
 types/C# => class C extends Object { self: C => +1 decls }
@@ -4117,7 +4221,7 @@ types/Test.C#RepeatedType.unapplySeq().(x$1) => param x$1: RepeatedType
 types/Test.C#TypeType. => final object TypeType extends Object { self: <?>.TypeType.type => +6 decls }
 types/Test.C#TypeType.T1# => type T1 
 types/Test.C#TypeType.T4# => type T4  = C
-types/Test.C#TypeType.T5# => type T5 [typeparam U ] = U
+types/Test.C#TypeType.T5# => type T5  = <?>
 types/Test.C#TypeType.T5#[U] => typeparam U 
 types/Test.C#TypeType.m2(). => method m2 [] => Nothing
 types/Test.C#TypeType.m2().[T2] => typeparam T2  = C
