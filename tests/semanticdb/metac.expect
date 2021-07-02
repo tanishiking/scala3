@@ -789,9 +789,9 @@ enumVal/Color#`<init>`().(rgb) => val param rgb: Int
 enumVal/Color#rgb. => val method rgb Int
 enumVal/Color. => final object Color extends Object { self: <?>.Color.type => +8 decls }
 enumVal/Color.$values. => val method $values Array[Color]
-enumVal/Color.Blue. => case val static enum method Blue Color
-enumVal/Color.Green. => case val static enum method Green Color & A
-enumVal/Color.Red. => case val static enum method Red Color
+enumVal/Color.Blue. => val static enum method Blue Color
+enumVal/Color.Green. => val static enum method Green Color & A
+enumVal/Color.Red. => val static enum method Red Color
 enumVal/Color.fromOrdinal(). => method fromOrdinal (param ordinal: Int): Color
 enumVal/Color.fromOrdinal().(ordinal) => param ordinal: Int
 enumVal/Color.valueOf(). => method valueOf (param $name: String): Color
@@ -840,11 +840,11 @@ _empty_/Enums.Coin#`<init>`().(value) => param value: Int
 _empty_/Enums.Coin#value. => val method value Int
 _empty_/Enums.Coin. => final object Coin extends Object { self: <?>.Coin.type => +10 decls }
 _empty_/Enums.Coin.$values. => val method $values Array[Coin]
-_empty_/Enums.Coin.Dime. => case val static enum method Dime Coin
-_empty_/Enums.Coin.Dollar. => case val static enum method Dollar Coin
-_empty_/Enums.Coin.Nickel. => case val static enum method Nickel Coin
-_empty_/Enums.Coin.Penny. => case val static enum method Penny Coin
-_empty_/Enums.Coin.Quarter. => case val static enum method Quarter Coin
+_empty_/Enums.Coin.Dime. => val static enum method Dime Coin
+_empty_/Enums.Coin.Dollar. => val static enum method Dollar Coin
+_empty_/Enums.Coin.Nickel. => val static enum method Nickel Coin
+_empty_/Enums.Coin.Penny. => val static enum method Penny Coin
+_empty_/Enums.Coin.Quarter. => val static enum method Quarter Coin
 _empty_/Enums.Coin.fromOrdinal(). => method fromOrdinal (param ordinal: Int): Coin
 _empty_/Enums.Coin.fromOrdinal().(ordinal) => param ordinal: Int
 _empty_/Enums.Coin.valueOf(). => method valueOf (param $name: String): Coin
@@ -857,9 +857,9 @@ _empty_/Enums.Colour.$new(). => method $new (param _$ordinal: Int, param $name: 
 _empty_/Enums.Colour.$new().($name) => param $name: String
 _empty_/Enums.Colour.$new().(_$ordinal) => param _$ordinal: Int
 _empty_/Enums.Colour.$values. => val method $values Array[Colour]
-_empty_/Enums.Colour.Blue. => case val static enum method Blue Colour
-_empty_/Enums.Colour.Green. => case val static enum method Green Colour
-_empty_/Enums.Colour.Red. => case val static enum method Red Colour
+_empty_/Enums.Colour.Blue. => val static enum method Blue Colour
+_empty_/Enums.Colour.Green. => val static enum method Green Colour
+_empty_/Enums.Colour.Red. => val static enum method Red Colour
 _empty_/Enums.Colour.fromOrdinal(). => method fromOrdinal (param ordinal: Int): Colour
 _empty_/Enums.Colour.fromOrdinal().(ordinal) => param ordinal: Int
 _empty_/Enums.Colour.valueOf(). => method valueOf (param $name: String): Colour
@@ -872,10 +872,10 @@ _empty_/Enums.Directions.$new(). => method $new (param _$ordinal: Int, param $na
 _empty_/Enums.Directions.$new().($name) => param $name: String
 _empty_/Enums.Directions.$new().(_$ordinal) => param _$ordinal: Int
 _empty_/Enums.Directions.$values. => val method $values Array[Directions]
-_empty_/Enums.Directions.East. => case val static enum method East Directions
-_empty_/Enums.Directions.North. => case val static enum method North Directions
-_empty_/Enums.Directions.South. => case val static enum method South Directions
-_empty_/Enums.Directions.West. => case val static enum method West Directions
+_empty_/Enums.Directions.East. => val static enum method East Directions
+_empty_/Enums.Directions.North. => val static enum method North Directions
+_empty_/Enums.Directions.South. => val static enum method South Directions
+_empty_/Enums.Directions.West. => val static enum method West Directions
 _empty_/Enums.Directions.fromOrdinal(). => method fromOrdinal (param ordinal: Int): Directions
 _empty_/Enums.Directions.fromOrdinal().(ordinal) => param ordinal: Int
 _empty_/Enums.Directions.valueOf(). => method valueOf (param $name: String): Directions
@@ -905,7 +905,7 @@ _empty_/Enums.Maybe.Just.toString(). => method toString => String
 _empty_/Enums.Maybe.Just.unapply(). => method unapply [typeparam A ](param x$1: Just[A]): Just[A]
 _empty_/Enums.Maybe.Just.unapply().(x$1) => param x$1: Just[A]
 _empty_/Enums.Maybe.Just.unapply().[A] => typeparam A 
-_empty_/Enums.Maybe.None. => case val static enum method None Maybe[Nothing]
+_empty_/Enums.Maybe.None. => val static enum method None Maybe[Nothing]
 _empty_/Enums.Maybe.fromOrdinal(). => method fromOrdinal (param ordinal: Int): Maybe[<?>]
 _empty_/Enums.Maybe.fromOrdinal().(ordinal) => param ordinal: Int
 _empty_/Enums.Planet# => abstract sealed enum class Planet extends Enum[Planet] with Enum { self: Planet => +6 decls }
@@ -920,14 +920,14 @@ _empty_/Enums.Planet#surfaceWeight(). => method surfaceWeight (param otherMass: 
 _empty_/Enums.Planet#surfaceWeight().(otherMass) => param otherMass: Double
 _empty_/Enums.Planet. => final object Planet extends Object { self: <?>.Planet.type => +13 decls }
 _empty_/Enums.Planet.$values. => val method $values Array[Planet]
-_empty_/Enums.Planet.Earth. => case val static enum method Earth Planet
-_empty_/Enums.Planet.Jupiter. => case val static enum method Jupiter Planet
-_empty_/Enums.Planet.Mars. => case val static enum method Mars Planet
-_empty_/Enums.Planet.Mercury. => case val static enum method Mercury Planet
-_empty_/Enums.Planet.Neptune. => case val static enum method Neptune Planet
-_empty_/Enums.Planet.Saturn. => case val static enum method Saturn Planet
-_empty_/Enums.Planet.Uranus. => case val static enum method Uranus Planet
-_empty_/Enums.Planet.Venus. => case val static enum method Venus Planet
+_empty_/Enums.Planet.Earth. => val static enum method Earth Planet
+_empty_/Enums.Planet.Jupiter. => val static enum method Jupiter Planet
+_empty_/Enums.Planet.Mars. => val static enum method Mars Planet
+_empty_/Enums.Planet.Mercury. => val static enum method Mercury Planet
+_empty_/Enums.Planet.Neptune. => val static enum method Neptune Planet
+_empty_/Enums.Planet.Saturn. => val static enum method Saturn Planet
+_empty_/Enums.Planet.Uranus. => val static enum method Uranus Planet
+_empty_/Enums.Planet.Venus. => val static enum method Venus Planet
 _empty_/Enums.Planet.fromOrdinal(). => method fromOrdinal (param ordinal: Int): Planet
 _empty_/Enums.Planet.fromOrdinal().(ordinal) => param ordinal: Int
 _empty_/Enums.Planet.valueOf(). => method valueOf (param $name: String): Planet
@@ -940,10 +940,10 @@ _empty_/Enums.Suits.$new(). => method $new (param _$ordinal: Int, param $name: S
 _empty_/Enums.Suits.$new().($name) => param $name: String
 _empty_/Enums.Suits.$new().(_$ordinal) => param _$ordinal: Int
 _empty_/Enums.Suits.$values. => val method $values Array[Suits]
-_empty_/Enums.Suits.Clubs. => case val static enum method Clubs Suits
-_empty_/Enums.Suits.Diamonds. => case val static enum method Diamonds Suits
-_empty_/Enums.Suits.Hearts. => case val static enum method Hearts Suits
-_empty_/Enums.Suits.Spades. => case val static enum method Spades Suits
+_empty_/Enums.Suits.Clubs. => val static enum method Clubs Suits
+_empty_/Enums.Suits.Diamonds. => val static enum method Diamonds Suits
+_empty_/Enums.Suits.Hearts. => val static enum method Hearts Suits
+_empty_/Enums.Suits.Spades. => val static enum method Spades Suits
 _empty_/Enums.Suits.derived$CanEqual. => implicit lazy val method derived$CanEqual CanEqual[Suits, Suits]
 _empty_/Enums.Suits.fromOrdinal(). => method fromOrdinal (param ordinal: Int): Suits
 _empty_/Enums.Suits.fromOrdinal().(ordinal) => param ordinal: Int
@@ -959,8 +959,8 @@ _empty_/Enums.Tag#[A] => typeparam A
 _empty_/Enums.Tag#`<init>`(). => primary ctor <init> [unknown A: <?>]: Tag[A]
 _empty_/Enums.Tag. => final object Tag extends Object { self: <?>.Tag.type => +7 decls }
 _empty_/Enums.Tag.$values. => val method $values Array[Tag[<?>]]
-_empty_/Enums.Tag.BooleanTag. => case val static enum method BooleanTag Tag[Boolean]
-_empty_/Enums.Tag.IntTag. => case val static enum method IntTag Tag[Int]
+_empty_/Enums.Tag.BooleanTag. => val static enum method BooleanTag Tag[Boolean]
+_empty_/Enums.Tag.IntTag. => val static enum method IntTag Tag[Int]
 _empty_/Enums.Tag.fromOrdinal(). => method fromOrdinal (param ordinal: Int): Tag[<?>]
 _empty_/Enums.Tag.fromOrdinal().(ordinal) => param ordinal: Int
 _empty_/Enums.Tag.valueOf(). => method valueOf (param $name: String): Tag[<?>]
@@ -973,13 +973,13 @@ _empty_/Enums.WeekDays.$new(). => method $new (param _$ordinal: Int, param $name
 _empty_/Enums.WeekDays.$new().($name) => param $name: String
 _empty_/Enums.WeekDays.$new().(_$ordinal) => param _$ordinal: Int
 _empty_/Enums.WeekDays.$values. => val method $values Array[WeekDays]
-_empty_/Enums.WeekDays.Friday. => case val static enum method Friday WeekDays
-_empty_/Enums.WeekDays.Monday. => case val static enum method Monday WeekDays
-_empty_/Enums.WeekDays.Saturday. => case val static enum method Saturday WeekDays
-_empty_/Enums.WeekDays.Sunday. => case val static enum method Sunday WeekDays
-_empty_/Enums.WeekDays.Thursday. => case val static enum method Thursday WeekDays
-_empty_/Enums.WeekDays.Tuesday. => case val static enum method Tuesday WeekDays
-_empty_/Enums.WeekDays.Wednesday. => case val static enum method Wednesday WeekDays
+_empty_/Enums.WeekDays.Friday. => val static enum method Friday WeekDays
+_empty_/Enums.WeekDays.Monday. => val static enum method Monday WeekDays
+_empty_/Enums.WeekDays.Saturday. => val static enum method Saturday WeekDays
+_empty_/Enums.WeekDays.Sunday. => val static enum method Sunday WeekDays
+_empty_/Enums.WeekDays.Thursday. => val static enum method Thursday WeekDays
+_empty_/Enums.WeekDays.Tuesday. => val static enum method Tuesday WeekDays
+_empty_/Enums.WeekDays.Wednesday. => val static enum method Wednesday WeekDays
 _empty_/Enums.WeekDays.fromOrdinal(). => method fromOrdinal (param ordinal: Int): WeekDays
 _empty_/Enums.WeekDays.fromOrdinal().(ordinal) => param ordinal: Int
 _empty_/Enums.WeekDays.valueOf(). => method valueOf (param $name: String): WeekDays
@@ -1984,6 +1984,59 @@ Occurrences:
 [5:4..5:8): List -> scala/package.List.
 [5:8..5:8): -> scala/collection/IterableFactory#apply().
 [5:9..5:10): x -> local0
+
+expect/MatchType.scala
+----------------------
+
+Summary:
+Schema => SemanticDB v4
+Uri => MatchType.scala
+Text => empty
+Language => Scala
+Symbols => 10 entries
+Occurrences => 28 entries
+
+Symbols:
+_empty_/MatchType$package. => final package object _empty_ extends Object { self: <?>._empty_.type => +3 decls }
+_empty_/MatchType$package.Concat# => type Concat  = <?>
+_empty_/MatchType$package.Concat#[Xs] => typeparam Xs 
+_empty_/MatchType$package.Concat#[Ys] => covariant typeparam Ys 
+_empty_/MatchType$package.Elem# => type Elem  = <?>
+_empty_/MatchType$package.Elem#[X] => typeparam X 
+local0 => case val method t 
+local1 => case val method t 
+local2 => case val method x  = <?>
+local3 => case val method xs  = <?>
+
+Occurrences:
+[2:5..2:9): Elem <- _empty_/MatchType$package.Elem#
+[2:10..2:11): X <- _empty_/MatchType$package.Elem#[X]
+[2:15..2:16): X -> _empty_/MatchType$package.Elem#[X]
+[3:7..3:13): String -> scala/Predef.String#
+[3:17..3:21): Char -> scala/Char#
+[4:7..4:12): Array -> scala/Array#
+[4:13..4:14): t <- local0
+[4:19..4:20): t -> local0
+[5:7..5:15): Iterable -> scala/package.Iterable#
+[5:16..5:17): t <- local1
+[5:22..5:23): t -> local1
+[7:5..7:11): Concat <- _empty_/MatchType$package.Concat#
+[7:12..7:14): Xs <- _empty_/MatchType$package.Concat#[Xs]
+[7:18..7:23): Tuple -> scala/Tuple#
+[7:26..7:28): Ys <- _empty_/MatchType$package.Concat#[Ys]
+[7:32..7:37): Tuple -> scala/Tuple#
+[7:42..7:47): Tuple -> scala/Tuple#
+[7:50..7:52): Xs -> _empty_/MatchType$package.Concat#[Xs]
+[8:7..8:17): EmptyTuple -> scala/Tuple$package.EmptyTuple#
+[8:21..8:23): Ys -> _empty_/MatchType$package.Concat#[Ys]
+[9:7..9:8): x <- local2
+[9:9..9:11): *: -> scala/`*:`#
+[9:12..9:14): xs <- local3
+[9:18..9:19): x -> local2
+[9:20..9:22): *: -> scala/`*:`#
+[9:23..9:29): Concat -> _empty_/MatchType$package.Concat#
+[9:30..9:32): xs -> local3
+[9:34..9:36): Ys -> _empty_/MatchType$package.Concat#[Ys]
 
 expect/MetacJava.scala
 ----------------------
