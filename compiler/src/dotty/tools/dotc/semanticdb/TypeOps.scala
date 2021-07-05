@@ -26,7 +26,15 @@ class TypeOps:
       def enterParamRef(tpe: Type): Unit =
         tpe match {
           case lam: LambdaType =>
-            paramRefSymtab((lam, sym.name)) = sym
+            // find the real owner type
+            if lam.paramNames.contains(sym.name) then
+              paramRefSymtab((lam, sym.name)) = sym
+            else
+              enterParamRef(lam.resType)
+
+          // for CaseType `case Array[t] => t` which is represented as [t] =>> MatchCase[Array[t], t]
+          case m: MatchType =>
+            m.cases.foreach(enterParamRef)
 
           // for class constructor
           // class C[T] { ... }
@@ -172,6 +180,8 @@ class TypeOps:
 
         case tref: ParamRef =>
           val key = (tref.binder, tref.paramName)
+          pprint.pprintln(key)
+          pprint.pprintln(paramRefSymtab)
           paramRefSymtab.get(key) match {
             case Some(ref) =>
               val ssym = ref.symbolName
@@ -200,57 +210,45 @@ class TypeOps:
           s.ConstantType(const.toSemanticConst)
 
         case lam: HKTypeLambda =>
-          def flatten(lambda: HKTypeLambda, acc: List[List[TypeName]]): (List[List[TypeName]], Type) = {
-            lambda.resType match {
-              case res: HKTypeLambda => flatten(res, acc :+ res.paramNames)
-              case other => (acc, other)
-            }
-          }
-          val (paramNamess, resType) = flatten(lam, Nil)
-          val paramSymss = paramNamess.map { paramNames =>
-            paramNames.flatMap { paramName =>
-              val key = (lam, paramName)
-              paramRefSymtab.get(key)
-            }
-          }
-          val stparamss = paramSymss.map(_.sscope)
-          val sresTpe = loop(resType)
-          val res = s.TypeLambda(stparamss, sresTpe)
-          println("===")
-          println(sym)
-          println(lam)
-          println(res)
+          val stparams = lam.paramNames.flatMap { paramName =>
+            val key = (lam, paramName)
+            val got = paramRefSymtab.get(key)
+            got
+          }.sscope
+          val sresTpe = loop(lam.resType)
+          val res = s.TypeLambda(Some(stparams), sresTpe)
           res
 
         case matchType: MatchType =>
           val scases = matchType.cases.map { caseType => caseType match {
             case lam: HKTypeLambda =>
-              val paramSyms = lam.paramNames.flatMap { paramName =>
-                val key = (lam, paramName)
-                val get = paramRefSymtab.get(key)
-                get
-              }.sscope
+              // val paramSyms = lam.paramNames.flatMap { paramName =>
+              //   val key = (lam, paramName)
+              //   val get = paramRefSymtab.get(key)
+              //   get
+              // }.sscope
               lam.resType match {
                 case defn.MatchCase(key, body) =>
-                  s.CaseType(
-                    Some(paramSyms),
+                  pprint.pprintln(key)
+                  pprint.pprintln(body)
+                  s.MatchType.CaseType(
                     loop(key),
                     loop(body)
                   )
-                case _ => s.CaseType() // shouldn't happen
+                case _ => s.MatchType.CaseType() // shouldn't happen
               }
             case defn.MatchCase(key, body) =>
               val skey = loop(key)
               val sbody = loop(body)
-              s.CaseType(Some(s.Scope()), skey, sbody)
-            case _ => s.CaseType() // shouldn't happen
+              s.MatchType.CaseType(skey, sbody)
+            case _ => s.MatchType.CaseType() // shouldn't happen
           }}
           val sscrutinee = loop(matchType.scrutinee)
           val sbound = loop(matchType.bound)
           val t = s.MatchType(sscrutinee, sbound, scases)
-          // println(s"===${sym}===")
-          // println(matchType)
-          // println(t)
+          println(s"===${sym}===")
+          pprint.pprintln(matchType)
+          pprint.pprintln(t)
           t
 
         case rt @ RefinedType(parent, name, info) =>
