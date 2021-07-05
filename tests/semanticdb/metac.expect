@@ -1993,50 +1993,25 @@ Schema => SemanticDB v4
 Uri => MatchType.scala
 Text => empty
 Language => Scala
-Symbols => 10 entries
-Occurrences => 28 entries
+Symbols => 4 entries
+Occurrences => 9 entries
 
 Symbols:
-_empty_/MatchType$package. => final package object _empty_ extends Object { self: <?>._empty_.type => +3 decls }
-_empty_/MatchType$package.Concat# => type Concat  = <?>
-_empty_/MatchType$package.Concat#[Xs] => typeparam Xs 
-_empty_/MatchType$package.Concat#[Ys] => covariant typeparam Ys 
+_empty_/MatchType$package. => final package object _empty_ extends Object { self: <?>._empty_.type => +2 decls }
 _empty_/MatchType$package.Elem# => type Elem  = <?>
 _empty_/MatchType$package.Elem#[X] => typeparam X 
 local0 => case val method t 
-local1 => case val method t 
-local2 => case val method x  = <?>
-local3 => case val method xs  = <?>
 
 Occurrences:
 [2:5..2:9): Elem <- _empty_/MatchType$package.Elem#
 [2:10..2:11): X <- _empty_/MatchType$package.Elem#[X]
-[2:15..2:16): X -> _empty_/MatchType$package.Elem#[X]
+[2:16..2:19): Any -> scala/Any#
+[2:22..2:23): X -> _empty_/MatchType$package.Elem#[X]
 [3:7..3:13): String -> scala/Predef.String#
 [3:17..3:21): Char -> scala/Char#
 [4:7..4:12): Array -> scala/Array#
 [4:13..4:14): t <- local0
 [4:19..4:20): t -> local0
-[5:7..5:15): Iterable -> scala/package.Iterable#
-[5:16..5:17): t <- local1
-[5:22..5:23): t -> local1
-[7:5..7:11): Concat <- _empty_/MatchType$package.Concat#
-[7:12..7:14): Xs <- _empty_/MatchType$package.Concat#[Xs]
-[7:18..7:23): Tuple -> scala/Tuple#
-[7:26..7:28): Ys <- _empty_/MatchType$package.Concat#[Ys]
-[7:32..7:37): Tuple -> scala/Tuple#
-[7:42..7:47): Tuple -> scala/Tuple#
-[7:50..7:52): Xs -> _empty_/MatchType$package.Concat#[Xs]
-[8:7..8:17): EmptyTuple -> scala/Tuple$package.EmptyTuple#
-[8:21..8:23): Ys -> _empty_/MatchType$package.Concat#[Ys]
-[9:7..9:8): x <- local2
-[9:9..9:11): *: -> scala/`*:`#
-[9:12..9:14): xs <- local3
-[9:18..9:19): x -> local2
-[9:20..9:22): *: -> scala/`*:`#
-[9:23..9:29): Concat -> _empty_/MatchType$package.Concat#
-[9:30..9:32): xs -> local3
-[9:34..9:36): Ys -> _empty_/MatchType$package.Concat#[Ys]
 
 expect/MetacJava.scala
 ----------------------
