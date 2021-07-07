@@ -34,6 +34,7 @@ class SymbolInfomationPrinter (symtab: PrinterSymtab):
       case Reference, Definition
     def pprint(info: SymbolInformation): String =
       val sb = new StringBuilder()
+      sb.append(pprintAccess(info.access))
       if info.isAbstract then sb.append("abstract ")
       if info.isFinal then sb.append("final ")
       if info.isSealed then sb.append("sealed ")
@@ -67,6 +68,19 @@ class SymbolInfomationPrinter (symtab: PrinterSymtab):
         case UNKNOWN_KIND | Unrecognized(_) => sb.append("unknown ")
       sb.append(s"${info.displayName}${info.prefixBeforeTpe}${pprint(info.signature)}")
       sb.toString
+
+    private def pprintAccess(access: Access): String =
+      access match
+        case Access.Empty => ""
+        case _: PublicAccess => ""
+        case _: PrivateAccess => "private "
+        case _: ProtectedAccess => "protected "
+        case _: PrivateThisAccess => "private[this] "
+        case _: ProtectedThisAccess => "protected[this] "
+        case PrivateWithinAccess(ssym) =>
+          s"private[${pprintRef(ssym)}] "
+        case ProtectedWithinAccess(ssym) =>
+          s"protected[${pprintRef(ssym)}] "
 
     private def pprintDef(info: SymbolInformation) =
       notes.enter(info)
@@ -140,7 +154,11 @@ class SymbolInfomationPrinter (symtab: PrinterSymtab):
           val argsStr = if (args.nonEmpty) args.map(normal).mkString("[", ", ", "]") else ""
           s"${preStr}${pprintRef(sym)}${argsStr}"
         case SingleType(pre, sym) =>
-          s"${prefix(pre)}.${pprintRef(sym)}"
+          pre match {
+            case Type.Empty => pprintRef(sym)
+            case _ =>
+              s"${prefix(pre)}.${pprintRef(sym)}"
+          }
         case ThisType(sym) =>
           s"${pprintRef(sym)}.this"
         case SuperType(pre, sym) =>
@@ -161,7 +179,10 @@ class SymbolInfomationPrinter (symtab: PrinterSymtab):
           s"${normal(utpe)} ${declsStr}"
         case AnnotatedType(anns, utpe) =>
           s"${normal(utpe)} ${anns.map(pprint).mkString(" ")}"
-        // case ExistentialType(utpe, decls) => // Scala3 shouldn't emit ExistentialType
+        case ExistentialType(utpe, decls) =>
+          val sdecls = decls.infos.map(_.displayName).mkString("; ")
+          val sutpe = normal(utpe)
+          s"${sutpe} forSome { ${sdecls} }"
         case UniversalType(tparams, utpe) =>
           val params = tparams.infos.map(_.displayName).mkString("[", ", ", "]")
           val resType = normal(utpe)

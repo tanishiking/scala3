@@ -26,7 +26,15 @@ class TypeOps:
       def enterParamRef(tpe: Type): Unit =
         tpe match {
           case lam: LambdaType =>
-            // find the real owner type
+            // Find the "actual" binder type for nested LambdaType
+            // For example, `def foo(x: T)(y: T): T` and for `<y>.owner.info` would be like
+            // `MethodType(...<x>, resType = MethodType(...<y>, resType = <T>))`.
+            // (Let's say the outer `MethodType` "outer", and `MethodType` who is
+            // `resType` of outer "inner")
+            //
+            // We try to find the "actual" binder of <y>: `inner`,
+            // and register them to the symbol table with `(<y>, inner) -> <y>`
+            // instead of `("y", outer) -> <y>`
             if lam.paramNames.contains(sym.name) then
               paramRefSymtab((lam, sym.name)) = sym
             else
@@ -90,16 +98,36 @@ class TypeOps:
       enterRefined(sym.owner.info)
 
       def loop(tpe: Type): s.Signature = tpe match {
-        case mt: MethodType =>
-          val stparams = Some(s.Scope())
-          val paramss =
-            if (sym.rawParamss.nonEmpty) sym.rawParamss else sym.paramSymss
-          val termParamss = paramss.filter(ps => ps.forall(!_.isTypeParam))
-          val sparamss = termParamss.map(_.sscope)
+        case mp: MethodOrPoly =>
+          def flatten(
+            t: Type,
+            paramss: List[List[Symbol]],
+            tparams: List[Symbol]
+          ): (Type, List[List[Symbol]], List[Symbol]) = t match {
+            case mt: MethodType =>
+              val syms = mt.paramNames.flatMap { paramName =>
+                val key = (mt, paramName)
+                paramRefSymtab.get(key)
+              }
+              flatten(mt.resType, paramss :+ syms, tparams)
+            case pt: PolyType =>
+              val syms = pt.paramNames.flatMap { paramName =>
+                val key = (pt, paramName)
+                paramRefSymtab.get(key)
+              }
+              // there shouldn't multiple type params
+              flatten(pt.resType, paramss, syms)
+            case other =>
+              (other, paramss, tparams)
+          }
+          val (resType, paramss, tparams) = flatten(mp, Nil, Nil)
+
+          val sparamss = paramss.map(_.sscope)
+          val stparams = Some(tparams.sscope)
           s.MethodSignature(
             stparams,
             sparamss,
-            mt.resType.toSemanticType(sym)
+            resType.toSemanticType
           )
 
         case cls: ClassInfo =>
@@ -107,8 +135,8 @@ class TypeOps:
             if (cls.cls.typeParams.nonEmpty)
               Some(cls.cls.typeParams.sscope)
             else None
-          val sparents = cls.parents.map(_.toSemanticType(sym))
-          val sself = cls.selfType.toSemanticType(sym)
+          val sparents = cls.parents.map(_.toSemanticType)
+          val sself = cls.selfType.toSemanticType
           val decls = cls.decls.toList.sscope
           s.ClassSignature(stparams, sparents, sself, Some(decls))
 
@@ -132,56 +160,37 @@ class TypeOps:
           // val (loRes, loParams) = tparams(lo)
           // val (hiRes, hiParams) = tparams(hi)
           // val params = (loParams ++ hiParams).distinctBy(_.name)
-          val slo = lo.toSemanticType(sym)
-          val shi = hi.toSemanticType(sym)
+          val slo = lo.toSemanticType
+          val shi = hi.toSemanticType
           // val stparams = params.sscope
           s.TypeSignature(Some(s.Scope()), slo, shi)
 
-        case pt: PolyType =>
-          loop(pt.resType) match {
-            case m: s.MethodSignature =>
-              val paramss =
-                if (sym.rawParamss.nonEmpty) sym.rawParamss else sym.paramSymss
-              val tparamss = paramss.filter(ps => ps.forall(_.isTypeParam))
-              val stparams = tparamss.flatten.sscope
-              m.copy(typeParameters = Some(stparams))
-            case v: s.ValueSignature =>
-              val paramss =
-                if (sym.rawParamss.nonEmpty) sym.rawParamss else sym.paramSymss
-              val tparamss = paramss.filter(ps => ps.forall(_.isTypeParam))
-              val stparams = tparamss.flatten.sscope
-              s.ValueSignature(s.UniversalType(Some(stparams), v.tpe))
-            case _ => s.Signature.Empty
-          }
-
         case other =>
           s.ValueSignature(
-            other.toSemanticType(sym)
+            other.toSemanticType
           )
       }
       loop(tpe)
 
-    private def toSemanticType(using LinkMode, SemanticSymbolBuilder, Context)(sym: Symbol): s.Type =
+    private def toSemanticType(using LinkMode, SemanticSymbolBuilder, Context): s.Type =
       import ConstantOps._
       def loop(tpe: Type): s.Type = tpe match {
         case ExprType(tpe) =>
           val stpe = loop(tpe)
           s.ByNameType(stpe)
 
-        case TypeRef(pre, desig) if desig.isInstanceOf[Symbol] =>
+        case TypeRef(pre, sym: Symbol) =>
           val spre = if(tpe.hasTrivialPrefix) s.Type.Empty else loop(pre)
-          val ssym = desig.asInstanceOf[Symbol].symbolName
+          val ssym = sym.symbolName
           s.TypeRef(spre, ssym, Seq.empty)
 
-        case TermRef(pre, desig) if desig.isInstanceOf[Symbol] =>
+        case TermRef(pre, sym: Symbol) =>
           val spre = if(tpe.hasTrivialPrefix) s.Type.Empty else loop(pre)
-          val ssym = desig.asInstanceOf[Symbol].symbolName
+          val ssym = sym.symbolName
           s.SingleType(spre, ssym)
 
         case tref: ParamRef =>
           val key = (tref.binder, tref.paramName)
-          pprint.pprintln(key)
-          pprint.pprintln(paramRefSymtab)
           paramRefSymtab.get(key) match {
             case Some(ref) =>
               val ssym = ref.symbolName
@@ -193,9 +202,8 @@ class TypeOps:
               s.Type.Empty
           }
 
-        case ThisType(TypeRef(_, desig)) if desig.isInstanceOf[Symbol] =>
-          val ssym = desig.asInstanceOf[Symbol].symbolName
-          s.ThisType(ssym)
+        case ThisType(TypeRef(_, sym: Symbol)) =>
+          s.ThisType(sym.symbolName)
 
         case SuperType(thistpe, supertpe) =>
           val spre = loop(thistpe.typeSymbol.info)
@@ -229,8 +237,6 @@ class TypeOps:
               // }.sscope
               lam.resType match {
                 case defn.MatchCase(key, body) =>
-                  pprint.pprintln(key)
-                  pprint.pprintln(body)
                   s.MatchType.CaseType(
                     loop(key),
                     loop(body)
@@ -245,11 +251,7 @@ class TypeOps:
           }}
           val sscrutinee = loop(matchType.scrutinee)
           val sbound = loop(matchType.bound)
-          val t = s.MatchType(sscrutinee, sbound, scases)
-          println(s"===${sym}===")
-          pprint.pprintln(matchType)
-          pprint.pprintln(t)
-          t
+          s.MatchType(sscrutinee, sbound, scases)
 
         case rt @ RefinedType(parent, name, info) =>
           // `X { def x: Int; def y: Int }`
@@ -280,7 +282,7 @@ class TypeOps:
           }
 
           val (parent, refinedInfos) = flatten(rt, List.empty)
-          val stpe = s.WithType(flattenParent(parent))
+          val stpe = s.IntersectionType(flattenParent(parent))
 
           val decls = refinedInfos.flatMap { (name, _) =>
             refinementSymtab.get((rt, name))
@@ -313,11 +315,36 @@ class TypeOps:
           s.AnnotatedType(sannots, sparent)
 
         case app @ AppliedType(tycon, args) =>
-          val sargs = args.map(loop)
-          loop(tycon) match
+          val targs = args.map { arg =>
+            arg match
+              // For wildcard type C[_ <: T], it's internal type representation will be
+              // `AppliedType(TypeBounds(lo = <Nothing>, hi = <T>))`.
+              //
+              // As scalameta for Scala2 does, we'll convert the wildcard type to
+              // `ExistentialType(TypeRef(NoPrefix, C, <local0>), Scope(hardlinks = List(<local0>)))`
+              // where `<local0>` has
+              // display_name: "_" and,
+              // signature: type_signature(..., lo = <Nothing>, hi = <T>)
+              case bounds: TypeBounds =>
+                val wildcardSym = newSymbol(NoSymbol, tpnme.WILDCARD, Flags.EmptyFlags, bounds)
+                val ssym = wildcardSym.symbolName
+                (Some(wildcardSym), s.TypeRef(s.Type.Empty, ssym, Seq.empty))
+              case other =>
+                val sarg = loop(other)
+                (None, sarg)
+          }
+          val wildcardSyms = targs.flatMap(_._1)
+          val sargs = targs.map(_._2)
+
+          val applied = loop(tycon) match
             case ref: s.TypeRef => ref.copy(typeArguments = sargs)
-            // is there any other cases?
             case _ => s.Type.Empty
+
+          if (wildcardSyms.isEmpty) applied
+          else s.ExistentialType(
+            applied,
+            Some(wildcardSyms.sscope(using LinkMode.HardlinkChildren))
+          )
 
         case and: AndType =>
           def flatten(child: Type): List[Type] = child match
@@ -345,10 +372,10 @@ class TypeOps:
       def checkTrivialPrefix(pre: Type, sym: Symbol)(using Context): Boolean =
         pre =:= sym.owner.thisType
       tpe match {
-        case TypeRef(pre, desig) if desig.isInstanceOf[Symbol] =>
-          checkTrivialPrefix(pre, desig.asInstanceOf[Symbol])
-        case TermRef(pre, desig) if desig.isInstanceOf[Symbol] =>
-          checkTrivialPrefix(pre, desig.asInstanceOf[Symbol])
+        case TypeRef(pre, sym: Symbol) =>
+          checkTrivialPrefix(pre, sym)
+        case TermRef(pre, sym: Symbol) =>
+          checkTrivialPrefix(pre, sym)
         case _ => false
       }
 

@@ -34,7 +34,7 @@ class SemanticSymbolBuilder:
       name => s"$funSymbol($name)"
     else
       name => locals.keys.find(local => local.isTerm && local.owner == sym && local.name == name)
-                    .fold("<?>")(Symbols.LocalPrefix + _)
+                    .fold("<?>")(Symbols.LocalPrefix + locals(_))
 
   /** Add semanticdb name of the given symbol to string builder */
   private def addSymName(b: StringBuilder, sym: Symbol)(using Context): Unit =
@@ -92,19 +92,24 @@ class SemanticSymbolBuilder:
      */
     def localIdx(sym: Symbol)(using Context): Int =
       val startPos =
-        assert(sym.span.exists, s"$sym should have a span")
-        sym.span.start
+        // assert(sym.span.exists, s"$sym should have a span")
+        if (sym.span.exists) Some(sym.span.start) else None
       @tailrec
       def computeLocalIdx(sym: Symbol): Int = locals get sym match
         case Some(idx) => idx
-        case None => symsAtOffset(startPos).find(_.name == sym.name) match
-          case Some(other) => computeLocalIdx(other)
-          case None =>
-            val idx = nextLocalIdx
-            nextLocalIdx += 1
-            locals(sym) = idx
-            symsAtOffset(startPos) += sym
-            idx
+        case None =>
+          (for {
+            pos <- startPos
+            syms <- symsAtOffset.get(pos)
+            found <- syms.find(_.name == sym.name)
+          } yield found) match
+            case Some(other) => computeLocalIdx(other)
+            case None =>
+              val idx = nextLocalIdx
+              nextLocalIdx += 1
+              locals(sym) = idx
+              startPos.foreach(pos => symsAtOffset(pos) += sym)
+              idx
       end computeLocalIdx
       computeLocalIdx(sym)
     end localIdx
