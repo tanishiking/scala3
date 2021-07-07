@@ -1,7 +1,7 @@
 package dotty.tools.dotc.semanticdb
 
 import dotty.tools.dotc.core
-import core.Symbols.{ Symbol , defn }
+import core.Symbols.{ Symbol , defn, NoSymbol }
 import core.Contexts._
 import core.Names
 import core.Names.Name
@@ -9,6 +9,7 @@ import core.Types.Type
 import core.Flags._
 import core.NameKinds
 import core.StdNames.nme
+import SymbolInformation.{Kind => k}
 
 import java.lang.Character.{isJavaIdentifierPart, isJavaIdentifierStart}
 
@@ -127,15 +128,17 @@ object Scala3:
         sym.is(Synthetic) && !sym.isAnonymous && !sym.name.isEmptyNumbered
 
       def symbolInfo(symkinds: Set[SymbolKind])(using LinkMode, TypeOps, SemanticSymbolBuilder, Context): SymbolInformation =
+        val kind = sym.symbolKind(symkinds)
         val sname = sym.symbolName
         val signature = sym.info.toSemanticSig(sym)
         SymbolInformation(
-          symbol = sname,
+          symbol = symbolName,
           language = Language.SCALA,
-          kind = symbolKind(symkinds),
+          kind = kind,
           properties = sym.symbolProps(symkinds),
           displayName = Symbols.displaySymbol(sym),
           signature = signature,
+          access = sym.symbolAccess(kind),
         )
 
       /** The semanticdb name of the given symbol */
@@ -212,6 +215,22 @@ object Scala3:
         if sym.is(Enum) then
           props |= SymbolInformation.Property.ENUM.value
         props
+
+      private def symbolAccess(kind: SymbolInformation.Kind)(using Context, SemanticSymbolBuilder): Access =
+        kind match
+          case k.LOCAL | k.PARAMETER | k.SELF_PARAMETER | k.TYPE_PARAMETER | k.PACKAGE | k.PACKAGE_OBJECT =>
+            Access.Empty
+          case _ =>
+            if (sym.privateWithin == NoSymbol)
+              if (sym.isAllOf(PrivateLocal)) PrivateThisAccess()
+              else if (sym.is(Private)) PrivateAccess()
+              else if (sym.isAllOf(ProtectedLocal)) ProtectedThisAccess()
+              else if (sym.is(Protected)) ProtectedAccess()
+              else PublicAccess()
+            else
+              val ssym = sym.privateWithin.symbolName
+              if (sym.is(Protected)) ProtectedWithinAccess(ssym)
+              else PrivateWithinAccess(ssym)
   end SymbolOps
 
   object LocalSymbol:

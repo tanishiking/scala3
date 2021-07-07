@@ -16,13 +16,12 @@ import NameOps._
 import util.Spans.Span
 import util.{SourceFile, SourcePosition}
 import transform.SymUtils._
+import dotty.tools.dotc.{semanticdb => s}
 
 import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 import scala.annotation.{ threadUnsafe => tu, tailrec }
 import scala.PartialFunction.condOpt
-
-import dotty.tools.dotc.{semanticdb => s}
 
 /** Extract symbol references and uses to semanticdb files.
  *  See https://scalameta.org/docs/semanticdb/specification.html#symbol-1

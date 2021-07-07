@@ -34,6 +34,7 @@ class SymbolInfomationPrinter (symtab: PrinterSymtab):
       case Reference, Definition
     def pprint(info: SymbolInformation): String =
       val sb = new StringBuilder()
+      sb.append(pprintAccess(info.access))
       if info.isAbstract then sb.append("abstract ")
       if info.isFinal then sb.append("final ")
       if info.isSealed then sb.append("sealed ")
@@ -67,6 +68,19 @@ class SymbolInfomationPrinter (symtab: PrinterSymtab):
         case UNKNOWN_KIND | Unrecognized(_) => sb.append("unknown ")
       sb.append(s"${info.displayName}${info.prefixBeforeTpe}${pprint(info.signature)}")
       sb.toString
+
+    private def pprintAccess(access: Access): String =
+      access match
+        case Access.Empty => ""
+        case _: PublicAccess => ""
+        case _: PrivateAccess => "private "
+        case _: ProtectedAccess => "protected "
+        case _: PrivateThisAccess => "private[this] "
+        case _: ProtectedThisAccess => "protected[this] "
+        case PrivateWithinAccess(ssym) =>
+          s"private[${pprintRef(ssym)}] "
+        case ProtectedWithinAccess(ssym) =>
+          s"protected[${pprintRef(ssym)}] "
 
     private def pprintDef(info: SymbolInformation) =
       notes.enter(info)

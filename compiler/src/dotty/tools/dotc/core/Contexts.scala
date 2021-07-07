@@ -526,6 +526,10 @@ object Contexts {
     final def withOwner(owner: Symbol): Context =
       if (owner ne this.owner) fresh.setOwner(owner) else this
 
+    final def withUncommittedTyperState: Context =
+      val ts = typerState.uncommittedAncestor
+      if ts ne typerState then fresh.setTyperState(ts) else this
+
     final def withProperty[T](key: Key[T], value: Option[T]): Context =
       if (property(key) == value) this
       else value match {
@@ -555,7 +559,7 @@ object Contexts {
     def platform: Platform                 = base.platform
     def pendingUnderlying: util.HashSet[Type]      = base.pendingUnderlying
     def uniqueNamedTypes: Uniques.NamedTypeUniques = base.uniqueNamedTypes
-    def uniques: util.HashSet[Type]                = base.uniques
+    def uniques: util.WeakHashSet[Type]            = base.uniques
 
     def initialize()(using Context): Unit = base.initialize()
   }
