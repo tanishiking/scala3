@@ -454,7 +454,7 @@ classes/C11#foo(). => macro foo => Int
 classes/C11#foo(). => macro foo => Int
 classes/C12# => class C12 extends Object { self: C12 => +8 decls }
 classes/C12#Context# => class Context extends Object { self: Context => +2 decls }
-classes/C12#Context#Expr# => type Expr [typeparam T ]
+classes/C12#Context#Expr# => type Expr 
 classes/C12#Context#Expr#[T] => typeparam T 
 classes/C12#Context#`<init>`(). => primary ctor <init> (): Context
 classes/C12#`<init>`(). => primary ctor <init> (): C12
@@ -794,9 +794,9 @@ enumVal/Color#`<init>`().(rgb) => val param rgb: Int
 enumVal/Color#rgb. => val method rgb Int
 enumVal/Color. => final object Color extends Object { self: Color.type => +8 decls }
 enumVal/Color.$values. => private[this] val method $values Array[Color]
-enumVal/Color.Blue. => case val static enum method Blue Color
-enumVal/Color.Green. => case val static enum method Green Color & A
-enumVal/Color.Red. => case val static enum method Red Color
+enumVal/Color.Blue. => val static enum method Blue Color
+enumVal/Color.Green. => val static enum method Green Color & A
+enumVal/Color.Red. => val static enum method Red Color
 enumVal/Color.fromOrdinal(). => method fromOrdinal (param ordinal: Int): Color
 enumVal/Color.fromOrdinal().(ordinal) => param ordinal: Int
 enumVal/Color.valueOf(). => method valueOf (param $name: String): Color
@@ -845,11 +845,11 @@ _empty_/Enums.Coin#`<init>`().(value) => param value: Int
 _empty_/Enums.Coin#value. => private[this] val method value Int
 _empty_/Enums.Coin. => final object Coin extends Object { self: Coin.type => +10 decls }
 _empty_/Enums.Coin.$values. => private[this] val method $values Array[Coin]
-_empty_/Enums.Coin.Dime. => case val static enum method Dime Coin
-_empty_/Enums.Coin.Dollar. => case val static enum method Dollar Coin
-_empty_/Enums.Coin.Nickel. => case val static enum method Nickel Coin
-_empty_/Enums.Coin.Penny. => case val static enum method Penny Coin
-_empty_/Enums.Coin.Quarter. => case val static enum method Quarter Coin
+_empty_/Enums.Coin.Dime. => val static enum method Dime Coin
+_empty_/Enums.Coin.Dollar. => val static enum method Dollar Coin
+_empty_/Enums.Coin.Nickel. => val static enum method Nickel Coin
+_empty_/Enums.Coin.Penny. => val static enum method Penny Coin
+_empty_/Enums.Coin.Quarter. => val static enum method Quarter Coin
 _empty_/Enums.Coin.fromOrdinal(). => method fromOrdinal (param ordinal: Int): Coin
 _empty_/Enums.Coin.fromOrdinal().(ordinal) => param ordinal: Int
 _empty_/Enums.Coin.valueOf(). => method valueOf (param $name: String): Coin
@@ -862,9 +862,9 @@ _empty_/Enums.Colour.$new(). => private[this] method $new (param _$ordinal: Int,
 _empty_/Enums.Colour.$new().($name) => param $name: String
 _empty_/Enums.Colour.$new().(_$ordinal) => param _$ordinal: Int
 _empty_/Enums.Colour.$values. => private[this] val method $values Array[Colour]
-_empty_/Enums.Colour.Blue. => case val static enum method Blue Colour
-_empty_/Enums.Colour.Green. => case val static enum method Green Colour
-_empty_/Enums.Colour.Red. => case val static enum method Red Colour
+_empty_/Enums.Colour.Blue. => val static enum method Blue Colour
+_empty_/Enums.Colour.Green. => val static enum method Green Colour
+_empty_/Enums.Colour.Red. => val static enum method Red Colour
 _empty_/Enums.Colour.fromOrdinal(). => method fromOrdinal (param ordinal: Int): Colour
 _empty_/Enums.Colour.fromOrdinal().(ordinal) => param ordinal: Int
 _empty_/Enums.Colour.valueOf(). => method valueOf (param $name: String): Colour
@@ -877,10 +877,10 @@ _empty_/Enums.Directions.$new(). => private[this] method $new (param _$ordinal: 
 _empty_/Enums.Directions.$new().($name) => param $name: String
 _empty_/Enums.Directions.$new().(_$ordinal) => param _$ordinal: Int
 _empty_/Enums.Directions.$values. => private[this] val method $values Array[Directions]
-_empty_/Enums.Directions.East. => case val static enum method East Directions
-_empty_/Enums.Directions.North. => case val static enum method North Directions
-_empty_/Enums.Directions.South. => case val static enum method South Directions
-_empty_/Enums.Directions.West. => case val static enum method West Directions
+_empty_/Enums.Directions.East. => val static enum method East Directions
+_empty_/Enums.Directions.North. => val static enum method North Directions
+_empty_/Enums.Directions.South. => val static enum method South Directions
+_empty_/Enums.Directions.West. => val static enum method West Directions
 _empty_/Enums.Directions.fromOrdinal(). => method fromOrdinal (param ordinal: Int): Directions
 _empty_/Enums.Directions.fromOrdinal().(ordinal) => param ordinal: Int
 _empty_/Enums.Directions.valueOf(). => method valueOf (param $name: String): Directions
@@ -910,7 +910,7 @@ _empty_/Enums.Maybe.Just.toString(). => method toString => String
 _empty_/Enums.Maybe.Just.unapply(). => method unapply [typeparam A ](param x$1: Just[A]): Just[A]
 _empty_/Enums.Maybe.Just.unapply().(x$1) => param x$1: Just[A]
 _empty_/Enums.Maybe.Just.unapply().[A] => typeparam A 
-_empty_/Enums.Maybe.None. => case val static enum method None Maybe[Nothing]
+_empty_/Enums.Maybe.None. => val static enum method None Maybe[Nothing]
 _empty_/Enums.Maybe.fromOrdinal(). => method fromOrdinal (param ordinal: Int): Maybe[local0] forSome { _ }
 _empty_/Enums.Maybe.fromOrdinal().(ordinal) => param ordinal: Int
 _empty_/Enums.Planet# => abstract sealed enum class Planet extends Enum[Planet] with Enum { self: Planet => +6 decls }
@@ -925,14 +925,14 @@ _empty_/Enums.Planet#surfaceWeight(). => method surfaceWeight (param otherMass: 
 _empty_/Enums.Planet#surfaceWeight().(otherMass) => param otherMass: Double
 _empty_/Enums.Planet. => final object Planet extends Object { self: Planet.type => +13 decls }
 _empty_/Enums.Planet.$values. => private[this] val method $values Array[Planet]
-_empty_/Enums.Planet.Earth. => case val static enum method Earth Planet
-_empty_/Enums.Planet.Jupiter. => case val static enum method Jupiter Planet
-_empty_/Enums.Planet.Mars. => case val static enum method Mars Planet
-_empty_/Enums.Planet.Mercury. => case val static enum method Mercury Planet
-_empty_/Enums.Planet.Neptune. => case val static enum method Neptune Planet
-_empty_/Enums.Planet.Saturn. => case val static enum method Saturn Planet
-_empty_/Enums.Planet.Uranus. => case val static enum method Uranus Planet
-_empty_/Enums.Planet.Venus. => case val static enum method Venus Planet
+_empty_/Enums.Planet.Earth. => val static enum method Earth Planet
+_empty_/Enums.Planet.Jupiter. => val static enum method Jupiter Planet
+_empty_/Enums.Planet.Mars. => val static enum method Mars Planet
+_empty_/Enums.Planet.Mercury. => val static enum method Mercury Planet
+_empty_/Enums.Planet.Neptune. => val static enum method Neptune Planet
+_empty_/Enums.Planet.Saturn. => val static enum method Saturn Planet
+_empty_/Enums.Planet.Uranus. => val static enum method Uranus Planet
+_empty_/Enums.Planet.Venus. => val static enum method Venus Planet
 _empty_/Enums.Planet.fromOrdinal(). => method fromOrdinal (param ordinal: Int): Planet
 _empty_/Enums.Planet.fromOrdinal().(ordinal) => param ordinal: Int
 _empty_/Enums.Planet.valueOf(). => method valueOf (param $name: String): Planet
@@ -945,10 +945,10 @@ _empty_/Enums.Suits.$new(). => private[this] method $new (param _$ordinal: Int, 
 _empty_/Enums.Suits.$new().($name) => param $name: String
 _empty_/Enums.Suits.$new().(_$ordinal) => param _$ordinal: Int
 _empty_/Enums.Suits.$values. => private[this] val method $values Array[Suits]
-_empty_/Enums.Suits.Clubs. => case val static enum method Clubs Suits
-_empty_/Enums.Suits.Diamonds. => case val static enum method Diamonds Suits
-_empty_/Enums.Suits.Hearts. => case val static enum method Hearts Suits
-_empty_/Enums.Suits.Spades. => case val static enum method Spades Suits
+_empty_/Enums.Suits.Clubs. => val static enum method Clubs Suits
+_empty_/Enums.Suits.Diamonds. => val static enum method Diamonds Suits
+_empty_/Enums.Suits.Hearts. => val static enum method Hearts Suits
+_empty_/Enums.Suits.Spades. => val static enum method Spades Suits
 _empty_/Enums.Suits.derived$CanEqual. => implicit lazy val method derived$CanEqual CanEqual[Suits, Suits]
 _empty_/Enums.Suits.fromOrdinal(). => method fromOrdinal (param ordinal: Int): Suits
 _empty_/Enums.Suits.fromOrdinal().(ordinal) => param ordinal: Int
@@ -964,8 +964,8 @@ _empty_/Enums.Tag#[A] => typeparam A
 _empty_/Enums.Tag#`<init>`(). => primary ctor <init> [typeparam A ](): Tag[A]
 _empty_/Enums.Tag. => final object Tag extends Object { self: Tag.type => +7 decls }
 _empty_/Enums.Tag.$values. => private[this] val method $values Array[Tag[local1] forSome { _ }]
-_empty_/Enums.Tag.BooleanTag. => case val static enum method BooleanTag Tag[Boolean]
-_empty_/Enums.Tag.IntTag. => case val static enum method IntTag Tag[Int]
+_empty_/Enums.Tag.BooleanTag. => val static enum method BooleanTag Tag[Boolean]
+_empty_/Enums.Tag.IntTag. => val static enum method IntTag Tag[Int]
 _empty_/Enums.Tag.fromOrdinal(). => method fromOrdinal (param ordinal: Int): Tag[local4] forSome { _ }
 _empty_/Enums.Tag.fromOrdinal().(ordinal) => param ordinal: Int
 _empty_/Enums.Tag.valueOf(). => method valueOf (param $name: String): Tag[local3] forSome { _ }
@@ -978,13 +978,13 @@ _empty_/Enums.WeekDays.$new(). => private[this] method $new (param _$ordinal: In
 _empty_/Enums.WeekDays.$new().($name) => param $name: String
 _empty_/Enums.WeekDays.$new().(_$ordinal) => param _$ordinal: Int
 _empty_/Enums.WeekDays.$values. => private[this] val method $values Array[WeekDays]
-_empty_/Enums.WeekDays.Friday. => case val static enum method Friday WeekDays
-_empty_/Enums.WeekDays.Monday. => case val static enum method Monday WeekDays
-_empty_/Enums.WeekDays.Saturday. => case val static enum method Saturday WeekDays
-_empty_/Enums.WeekDays.Sunday. => case val static enum method Sunday WeekDays
-_empty_/Enums.WeekDays.Thursday. => case val static enum method Thursday WeekDays
-_empty_/Enums.WeekDays.Tuesday. => case val static enum method Tuesday WeekDays
-_empty_/Enums.WeekDays.Wednesday. => case val static enum method Wednesday WeekDays
+_empty_/Enums.WeekDays.Friday. => val static enum method Friday WeekDays
+_empty_/Enums.WeekDays.Monday. => val static enum method Monday WeekDays
+_empty_/Enums.WeekDays.Saturday. => val static enum method Saturday WeekDays
+_empty_/Enums.WeekDays.Sunday. => val static enum method Sunday WeekDays
+_empty_/Enums.WeekDays.Thursday. => val static enum method Thursday WeekDays
+_empty_/Enums.WeekDays.Tuesday. => val static enum method Tuesday WeekDays
+_empty_/Enums.WeekDays.Wednesday. => val static enum method Wednesday WeekDays
 _empty_/Enums.WeekDays.fromOrdinal(). => method fromOrdinal (param ordinal: Int): WeekDays
 _empty_/Enums.WeekDays.fromOrdinal().(ordinal) => param ordinal: Int
 _empty_/Enums.WeekDays.valueOf(). => method valueOf (param $name: String): WeekDays
@@ -2021,6 +2021,68 @@ Occurrences:
 [5:8..5:8): -> scala/collection/IterableFactory#apply().
 [5:9..5:10): x -> local0
 
+expect/MatchType.scala
+----------------------
+
+Summary:
+Schema => SemanticDB v4
+Uri => MatchType.scala
+Text => empty
+Language => Scala
+Symbols => 12 entries
+Occurrences => 35 entries
+
+Symbols:
+local0 => case val method t 
+local1 => case val method x  = <?>
+local2 => case val method xs  = <?>
+matchtype/MatchType$package. => final package object matchtype extends Object { self: matchtype.type => +4 decls }
+matchtype/MatchType$package.Concat# => type Concat [typeparam Xs , covariant typeparam Ys ] >: <?>
+matchtype/MatchType$package.Concat#[Xs] => typeparam Xs 
+matchtype/MatchType$package.Concat#[Ys] => covariant typeparam Ys 
+matchtype/MatchType$package.Elem# => type Elem [typeparam X ] >: <?>
+matchtype/MatchType$package.Elem#[X] => typeparam X 
+matchtype/MatchType$package.matchRes(). => method matchRes [typeparam T ](param x: T): <?>
+matchtype/MatchType$package.matchRes().(x) => param x: T
+matchtype/MatchType$package.matchRes().[T] => typeparam T 
+
+Occurrences:
+[0:8..0:17): matchtype <- matchtype/
+[2:4..2:12): matchRes <- matchtype/MatchType$package.matchRes().
+[2:13..2:14): T <- matchtype/MatchType$package.matchRes().[T]
+[2:16..2:17): x <- matchtype/MatchType$package.matchRes().(x)
+[2:19..2:20): T -> matchtype/MatchType$package.matchRes().[T]
+[2:23..2:24): T -> matchtype/MatchType$package.matchRes().[T]
+[2:38..2:44): String -> scala/Predef.String#
+[2:48..2:52): Char -> scala/Char#
+[2:57..2:60): ??? -> scala/Predef.`???`().
+[4:5..4:9): Elem <- matchtype/MatchType$package.Elem#
+[4:10..4:11): X <- matchtype/MatchType$package.Elem#[X]
+[4:16..4:19): Any -> scala/Any#
+[4:22..4:23): X -> matchtype/MatchType$package.Elem#[X]
+[5:7..5:13): String -> scala/Predef.String#
+[5:17..5:21): Char -> scala/Char#
+[6:7..6:12): Array -> scala/Array#
+[6:13..6:14): t <- local0
+[6:19..6:20): t -> local0
+[8:5..8:11): Concat <- matchtype/MatchType$package.Concat#
+[8:12..8:14): Xs <- matchtype/MatchType$package.Concat#[Xs]
+[8:18..8:23): Tuple -> scala/Tuple#
+[8:26..8:28): Ys <- matchtype/MatchType$package.Concat#[Ys]
+[8:32..8:37): Tuple -> scala/Tuple#
+[8:42..8:47): Tuple -> scala/Tuple#
+[8:50..8:52): Xs -> matchtype/MatchType$package.Concat#[Xs]
+[9:7..9:17): EmptyTuple -> scala/Tuple$package.EmptyTuple#
+[9:21..9:23): Ys -> matchtype/MatchType$package.Concat#[Ys]
+[10:7..10:8): x <- local1
+[10:9..10:11): *: -> scala/`*:`#
+[10:12..10:14): xs <- local2
+[10:18..10:19): x -> local1
+[10:20..10:22): *: -> scala/`*:`#
+[10:23..10:29): Concat -> matchtype/MatchType$package.Concat#
+[10:30..10:32): xs -> local2
+[10:34..10:36): Ys -> matchtype/MatchType$package.Concat#[Ys]
+
 expect/MetacJava.scala
 ----------------------
 
@@ -2234,7 +2296,7 @@ Occurrences => 156 entries
 
 Symbols:
 example/Methods# => class Methods [typeparam T ] extends Object { self: Methods[T] => +44 decls }
-example/Methods#AList# => type AList [typeparam T ] = List[T]
+example/Methods#AList# => type AList  = <?>
 example/Methods#AList#[T] => typeparam T 
 example/Methods#List# => class List [typeparam T ] extends Object { self: List[T] => +2 decls }
 example/Methods#List#[T] => typeparam T 
@@ -3219,6 +3281,110 @@ Occurrences:
 [12:10..12:10): <- traits/V#`<init>`().
 [12:16..12:17): C -> traits/C#
 
+expect/TypeLambda.scala
+-----------------------
+
+Summary:
+Schema => SemanticDB v4
+Uri => TypeLambda.scala
+Text => empty
+Language => Scala
+Symbols => 29 entries
+Occurrences => 60 entries
+
+Symbols:
+example/TypeLambda$package. => final package object example extends Object { self: example.type => +13 decls }
+example/TypeLambda$package.AList# => type AList  = <?>
+example/TypeLambda$package.AList#[X] => typeparam X 
+example/TypeLambda$package.B1# => type B1  = <?>
+example/TypeLambda$package.B1#[X] => typeparam X 
+example/TypeLambda$package.B2# => type B2  = <?>
+example/TypeLambda$package.B2#[X] => typeparam X  >: Int
+example/TypeLambda$package.MapKV# => type MapKV  = <?>
+example/TypeLambda$package.MapKV#[K] => typeparam K 
+example/TypeLambda$package.MapKV#[V] => typeparam V 
+example/TypeLambda$package.T1# => type T1  = <?>
+example/TypeLambda$package.T1#[X] => typeparam X 
+example/TypeLambda$package.T2# => type T2  = <?>
+example/TypeLambda$package.T2#[X] => typeparam X 
+example/TypeLambda$package.T3# => type T3  = <?>
+example/TypeLambda$package.T3#[X] => typeparam X 
+example/TypeLambda$package.T4# => type T4  = <?>
+example/TypeLambda$package.T4#[X] => typeparam X 
+example/TypeLambda$package.T4#[Y] => typeparam Y 
+example/TypeLambda$package.Tuple# => type Tuple  = <?>
+example/TypeLambda$package.Tuple#[X] => typeparam X 
+example/TypeLambda$package.Tuple#[Y] => typeparam Y 
+example/TypeLambda$package.TupleIntString# => type TupleIntString  = Tuple[String]
+example/TypeLambda$package.Union# => type Union  = <?>
+example/TypeLambda$package.Union#[A] => typeparam A 
+example/TypeLambda$package.Union#[B] => typeparam B 
+example/TypeLambda$package.Union#[C] => typeparam C 
+example/TypeLambda$package.V1# => type V1  = <?>
+example/TypeLambda$package.V1#[X] => covariant typeparam X 
+
+Occurrences:
+[0:8..0:15): example <- example/
+[2:5..2:7): T1 <- example/TypeLambda$package.T1#
+[2:11..2:12): X <- example/TypeLambda$package.T1#[X]
+[2:18..2:19): X -> example/TypeLambda$package.T1#[X]
+[3:5..3:7): T2 <- example/TypeLambda$package.T2#
+[3:11..3:12): X <- example/TypeLambda$package.T2#[X]
+[3:18..3:22): List -> scala/package.List#
+[3:23..3:24): X -> example/TypeLambda$package.T2#[X]
+[4:5..4:7): T3 <- example/TypeLambda$package.T3#
+[4:11..4:12): X <- example/TypeLambda$package.T3#[X]
+[4:18..4:21): Map -> scala/Predef.Map#
+[4:22..4:28): String -> scala/Predef.String#
+[4:30..4:31): X -> example/TypeLambda$package.T3#[X]
+[5:5..5:7): T4 <- example/TypeLambda$package.T4#
+[5:11..5:12): X <- example/TypeLambda$package.T4#[X]
+[5:14..5:15): Y <- example/TypeLambda$package.T4#[Y]
+[5:21..5:24): Map -> scala/Predef.Map#
+[5:25..5:26): Y -> example/TypeLambda$package.T4#[Y]
+[5:28..5:29): X -> example/TypeLambda$package.T4#[X]
+[7:5..7:7): B1 <- example/TypeLambda$package.B1#
+[7:8..7:9): X <- example/TypeLambda$package.B1#[X]
+[7:13..7:19): String -> scala/Predef.String#
+[7:23..7:24): X -> example/TypeLambda$package.B1#[X]
+[8:5..8:7): B2 <- example/TypeLambda$package.B2#
+[8:8..8:9): X <- example/TypeLambda$package.B2#[X]
+[8:13..8:16): Int -> scala/Int#
+[8:20..8:23): Any -> scala/Any#
+[10:5..10:7): V1 <- example/TypeLambda$package.V1#
+[10:9..10:10): X <- example/TypeLambda$package.V1#[X]
+[10:14..10:15): X -> example/TypeLambda$package.V1#[X]
+[10:19..10:20): X -> example/TypeLambda$package.V1#[X]
+[10:24..10:27): Any -> scala/Any#
+[12:5..12:10): AList <- example/TypeLambda$package.AList#
+[12:11..12:12): X <- example/TypeLambda$package.AList#[X]
+[12:16..12:20): List -> scala/package.List#
+[12:21..12:22): X -> example/TypeLambda$package.AList#[X]
+[14:5..14:10): Union <- example/TypeLambda$package.Union#
+[14:14..14:15): A <- example/TypeLambda$package.Union#[A]
+[14:22..14:23): B <- example/TypeLambda$package.Union#[B]
+[14:30..14:31): C <- example/TypeLambda$package.Union#[C]
+[14:37..14:38): A -> example/TypeLambda$package.Union#[A]
+[14:39..14:40): | -> scala/`|`#
+[14:41..14:42): B -> example/TypeLambda$package.Union#[B]
+[14:43..14:44): | -> scala/`|`#
+[14:45..14:46): C -> example/TypeLambda$package.Union#[C]
+[15:5..15:10): MapKV <- example/TypeLambda$package.MapKV#
+[15:14..15:15): K <- example/TypeLambda$package.MapKV#[K]
+[15:22..15:23): V <- example/TypeLambda$package.MapKV#[V]
+[15:29..15:32): Map -> scala/Predef.Map#
+[15:33..15:34): K -> example/TypeLambda$package.MapKV#[K]
+[15:36..15:37): V -> example/TypeLambda$package.MapKV#[V]
+[17:5..17:10): Tuple <- example/TypeLambda$package.Tuple#
+[17:14..17:15): X <- example/TypeLambda$package.Tuple#[X]
+[17:22..17:23): Y <- example/TypeLambda$package.Tuple#[Y]
+[17:30..17:31): X -> example/TypeLambda$package.Tuple#[X]
+[17:33..17:34): Y -> example/TypeLambda$package.Tuple#[Y]
+[18:5..18:19): TupleIntString <- example/TypeLambda$package.TupleIntString#
+[18:22..18:27): Tuple -> example/TypeLambda$package.Tuple#
+[18:28..18:31): Int -> scala/Int#
+[18:33..18:39): String -> scala/Predef.String#
+
 expect/ValPattern.scala
 -----------------------
 
@@ -3625,9 +3791,9 @@ Occurrences => 5 entries
 
 Symbols:
 exports/`exports-package$package`. => final package object exports extends Object { self: exports.type => +4 decls }
-exports/`exports-package$package`.Codec# => final type Codec  = Codec[<?>]
-exports/`exports-package$package`.Decoder# => final type Decoder  = Decoder[<?>]
-exports/`exports-package$package`.Encoder# => final type Encoder  = Encoder[<?>]
+exports/`exports-package$package`.Codec# => final type Codec  = <?>
+exports/`exports-package$package`.Decoder# => final type Decoder  = <?>
+exports/`exports-package$package`.Encoder# => final type Encoder  = <?>
 
 Occurrences:
 [0:8..0:15): exports <- exports/
@@ -3954,7 +4120,7 @@ flags/p/package.S# => class S [typeparam T ] extends Object { self: S[T] => +2 d
 flags/p/package.S#[T] => typeparam T 
 flags/p/package.S#`<init>`(). => primary ctor <init> [typeparam T ](): S[T]
 flags/p/package.T1# => type T1  = Int
-flags/p/package.T2# => type T2 [typeparam T ] = S[T]
+flags/p/package.T2# => type T2  = <?>
 flags/p/package.T2#[T] => typeparam T 
 flags/p/package.U# => type U 
 flags/p/package.V# => type V  >: Int
@@ -4079,7 +4245,7 @@ local5 => final class $anon extends M with N { self: $anon => +1 decls }
 local7 => method k => Int
 local8 => final class $anon extends M with N { self: $anon => +2 decls }
 local13 => typeparam T 
-local14 => type L [typeparam T ] = List[T]
+local14 => type L  = <?>
 types/B# => class B extends Object { self: B => +1 decls }
 types/B#`<init>`(). => primary ctor <init> (): B
 types/C# => class C extends Object { self: C => +1 decls }
@@ -4153,7 +4319,7 @@ types/Test.C#RepeatedType.unapplySeq().(x$1) => param x$1: RepeatedType
 types/Test.C#TypeType. => final object TypeType extends Object { self: TypeType.type => +6 decls }
 types/Test.C#TypeType.T1# => type T1 
 types/Test.C#TypeType.T4# => type T4  = C
-types/Test.C#TypeType.T5# => type T5 [typeparam U ] = U
+types/Test.C#TypeType.T5# => type T5  = <?>
 types/Test.C#TypeType.T5#[U] => typeparam U 
 types/Test.C#TypeType.m2(). => method m2 [typeparam T2  = C]: Nothing
 types/Test.C#TypeType.m2().[T2] => typeparam T2  = C

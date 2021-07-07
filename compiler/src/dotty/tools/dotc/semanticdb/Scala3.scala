@@ -198,7 +198,7 @@ object Scala3:
           props |= SymbolInformation.Property.IMPLICIT.value
         if sym.is(Lazy, butNot=Module) then
           props |= SymbolInformation.Property.LAZY.value
-        if sym.isAllOf(Case | Module) || sym.is(CaseClass) || sym.isAllOf(EnumCase) then
+        if sym.isAllOf(Case | Module) || sym.is(CaseClass) then
           props |= SymbolInformation.Property.CASE.value
         if sym.is(Covariant) then
           props |= SymbolInformation.Property.COVARIANT.value

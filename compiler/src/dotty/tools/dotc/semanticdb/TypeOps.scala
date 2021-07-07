@@ -7,7 +7,7 @@ import core.Contexts.Context
 import core.Types._
 import core.Annotations.Annotation
 import core.Flags
-import core.Names.Name
+import core.Names.{Name, TypeName}
 import core.StdNames.tpnme
 import ast.tpd._
 
@@ -39,6 +39,10 @@ class TypeOps:
               paramRefSymtab((lam, sym.name)) = sym
             else
               enterParamRef(lam.resType)
+
+          // for CaseType `case Array[t] => t` which is represented as [t] =>> MatchCase[Array[t], t]
+          case m: MatchType =>
+            m.cases.foreach(enterParamRef)
 
           // for class constructor
           // class C[T] { ... }
@@ -137,22 +141,41 @@ class TypeOps:
           s.ClassSignature(stparams, sparents, sself, Some(decls))
 
         case TypeBounds(lo, hi) =>
+          // oops we have no way to distinguish
+          // type X[T] = T and type X = [T] =>> T
+
           // for `type X[T] = T` is equivalent to `[T] =>> T`
-          def tparams(tpe: Type): (Type, List[Symbol]) = tpe match {
-            case lambda: HKTypeLambda =>
-              val paramSyms = lambda.paramNames.flatMap { paramName =>
-                paramRefSymtab.get((lambda, paramName))
+          // println("===")
+          // println(sym)
+          // println(sym.flagsString)
+          // def tparams(tpe: Type): (Type, List[Symbol]) = tpe match {
+          //   case lambda: HKTypeLambda =>
+          //     lambda.dealias
+          //     val paramSyms = lambda.paramNames.flatMap { paramName =>
+          //       paramRefSymtab.get((lambda, paramName))
+          //     }
+          //     (lambda.resType, paramSyms)
+          //   case _ => (tpe, Nil)
+          // }
+          // val (loRes, loParams) = tparams(lo)
+          // val (hiRes, hiParams) = tparams(hi)
+          // val params = (loParams ++ hiParams).distinctBy(_.name)
+          val sig = lo match
+            case lam: HKTypeLambda if lo == hi && lam.finalResultType.isInstanceOf[MatchType] =>
+              val paramSyms = lam.paramNames.flatMap { paramName =>
+                val key = (lam, paramName)
+                paramRefSymtab.get(key)
               }
-              (lambda.resType, paramSyms)
-            case _ => (tpe, Nil)
-          }
-          val (loRes, loParams) = tparams(lo)
-          val (hiRes, hiParams) = tparams(hi)
-          val params = (loParams ++ hiParams).distinctBy(_.name)
-          val slo = loRes.toSemanticType
-          val shi = hiRes.toSemanticType
-          val stparams = params.sscope
-          s.TypeSignature(Some(stparams), slo, shi)
+              val stparams = Some(paramSyms.sscope)
+              val slo = lam.finalResultType.toSemanticType
+              val shi = lam.finalResultType.asInstanceOf[MatchType].bound.toSemanticType
+              s.TypeSignature(stparams, slo, shi)
+            case _ =>
+              val slo = lo.toSemanticType
+              val shi = hi.toSemanticType
+              s.TypeSignature(Some(s.Scope()), slo, shi)
+          println(sig)
+          sig
 
         case other =>
           s.ValueSignature(
@@ -205,6 +228,45 @@ class TypeOps:
 
         case ConstantType(const) =>
           s.ConstantType(const.toSemanticConst)
+
+        case lam: HKTypeLambda =>
+          val stparams = lam.paramNames.flatMap { paramName =>
+            val key = (lam, paramName)
+            val got = paramRefSymtab.get(key)
+            got
+          }.sscope
+          val sresTpe = loop(lam.resType)
+          val res = s.LambdaType(Some(stparams), sresTpe)
+          res
+
+        case matchType: MatchType =>
+          val scases = matchType.cases.map { caseType => caseType match {
+            case lam: HKTypeLambda =>
+              // val paramSyms = lam.paramNames.flatMap { paramName =>
+              //   val key = (lam, paramName)
+              //   val get = paramRefSymtab.get(key)
+              //   get
+              // }.sscope
+              lam.resType match {
+                case defn.MatchCase(key, body) =>
+                  s.MatchType.CaseType(
+                    loop(key),
+                    loop(body)
+                  )
+                case _ => s.MatchType.CaseType() // shouldn't happen
+              }
+            case defn.MatchCase(key, body) =>
+              val skey = loop(key)
+              val sbody = loop(body)
+              s.MatchType.CaseType(skey, sbody)
+            case _ => s.MatchType.CaseType() // shouldn't happen
+          }}
+          val sscrutinee = loop(matchType.scrutinee)
+          val sbound = loop(matchType.bound)
+          val m = s.MatchType(sscrutinee, scases)
+          println(sbound)
+          println(m)
+          m
 
         case rt @ RefinedType(parent, name, info) =>
           // `X { def x: Int; def y: Int }`

@@ -510,6 +510,7 @@ object Build {
 
       // get libraries onboard
       libraryDependencies ++= Seq(
+        "com.lihaoyi" %% "pprint" % "0.6.6",
         "org.scala-lang.modules" % "scala-asm" % "9.1.0-scala-1", // used by the backend
         Dependencies.oldCompilerInterface, // we stick to the old version to avoid deprecation warnings
         "org.jline" % "jline-reader" % "3.19.0",   // used by the REPL
