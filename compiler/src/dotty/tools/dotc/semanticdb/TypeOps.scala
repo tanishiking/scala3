@@ -160,10 +160,22 @@ class TypeOps:
           // val (loRes, loParams) = tparams(lo)
           // val (hiRes, hiParams) = tparams(hi)
           // val params = (loParams ++ hiParams).distinctBy(_.name)
-          val slo = lo.toSemanticType
-          val shi = hi.toSemanticType
-          // val stparams = params.sscope
-          s.TypeSignature(Some(s.Scope()), slo, shi)
+          val sig = lo match
+            case lam: HKTypeLambda if lo == hi && lam.finalResultType.isInstanceOf[MatchType] =>
+              val paramSyms = lam.paramNames.flatMap { paramName =>
+                val key = (lam, paramName)
+                paramRefSymtab.get(key)
+              }
+              val stparams = Some(paramSyms.sscope)
+              val slo = lam.finalResultType.toSemanticType
+              val shi = lam.finalResultType.asInstanceOf[MatchType].bound.toSemanticType
+              s.TypeSignature(stparams, slo, shi)
+            case _ =>
+              val slo = lo.toSemanticType
+              val shi = hi.toSemanticType
+              s.TypeSignature(Some(s.Scope()), slo, shi)
+          println(sig)
+          sig
 
         case other =>
           s.ValueSignature(
@@ -224,7 +236,7 @@ class TypeOps:
             got
           }.sscope
           val sresTpe = loop(lam.resType)
-          val res = s.TypeLambda(Some(stparams), sresTpe)
+          val res = s.LambdaType(Some(stparams), sresTpe)
           res
 
         case matchType: MatchType =>
@@ -251,7 +263,10 @@ class TypeOps:
           }}
           val sscrutinee = loop(matchType.scrutinee)
           val sbound = loop(matchType.bound)
-          s.MatchType(sscrutinee, sbound, scases)
+          val m = s.MatchType(sscrutinee, scases)
+          println(sbound)
+          println(m)
+          m
 
         case rt @ RefinedType(parent, name, info) =>
           // `X { def x: Int; def y: Int }`

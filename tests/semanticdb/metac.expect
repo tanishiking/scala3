@@ -2029,25 +2029,59 @@ Schema => SemanticDB v4
 Uri => MatchType.scala
 Text => empty
 Language => Scala
-Symbols => 4 entries
-Occurrences => 9 entries
+Symbols => 12 entries
+Occurrences => 35 entries
 
 Symbols:
-_empty_/MatchType$package. => final package object _empty_ extends Object { self: _empty_.type => +2 decls }
-_empty_/MatchType$package.Elem# => type Elem  = <?>
-_empty_/MatchType$package.Elem#[X] => typeparam X 
 local0 => case val method t 
+local1 => case val method x  = <?>
+local2 => case val method xs  = <?>
+matchtype/MatchType$package. => final package object matchtype extends Object { self: matchtype.type => +4 decls }
+matchtype/MatchType$package.Concat# => type Concat [typeparam Xs , covariant typeparam Ys ] >: <?>
+matchtype/MatchType$package.Concat#[Xs] => typeparam Xs 
+matchtype/MatchType$package.Concat#[Ys] => covariant typeparam Ys 
+matchtype/MatchType$package.Elem# => type Elem [typeparam X ] >: <?>
+matchtype/MatchType$package.Elem#[X] => typeparam X 
+matchtype/MatchType$package.matchRes(). => method matchRes [typeparam T ](param x: T): <?>
+matchtype/MatchType$package.matchRes().(x) => param x: T
+matchtype/MatchType$package.matchRes().[T] => typeparam T 
 
 Occurrences:
-[2:5..2:9): Elem <- _empty_/MatchType$package.Elem#
-[2:10..2:11): X <- _empty_/MatchType$package.Elem#[X]
-[2:16..2:19): Any -> scala/Any#
-[2:22..2:23): X -> _empty_/MatchType$package.Elem#[X]
-[3:7..3:13): String -> scala/Predef.String#
-[3:17..3:21): Char -> scala/Char#
-[4:7..4:12): Array -> scala/Array#
-[4:13..4:14): t <- local0
-[4:19..4:20): t -> local0
+[0:8..0:17): matchtype <- matchtype/
+[2:4..2:12): matchRes <- matchtype/MatchType$package.matchRes().
+[2:13..2:14): T <- matchtype/MatchType$package.matchRes().[T]
+[2:16..2:17): x <- matchtype/MatchType$package.matchRes().(x)
+[2:19..2:20): T -> matchtype/MatchType$package.matchRes().[T]
+[2:23..2:24): T -> matchtype/MatchType$package.matchRes().[T]
+[2:38..2:44): String -> scala/Predef.String#
+[2:48..2:52): Char -> scala/Char#
+[2:57..2:60): ??? -> scala/Predef.`???`().
+[4:5..4:9): Elem <- matchtype/MatchType$package.Elem#
+[4:10..4:11): X <- matchtype/MatchType$package.Elem#[X]
+[4:16..4:19): Any -> scala/Any#
+[4:22..4:23): X -> matchtype/MatchType$package.Elem#[X]
+[5:7..5:13): String -> scala/Predef.String#
+[5:17..5:21): Char -> scala/Char#
+[6:7..6:12): Array -> scala/Array#
+[6:13..6:14): t <- local0
+[6:19..6:20): t -> local0
+[8:5..8:11): Concat <- matchtype/MatchType$package.Concat#
+[8:12..8:14): Xs <- matchtype/MatchType$package.Concat#[Xs]
+[8:18..8:23): Tuple -> scala/Tuple#
+[8:26..8:28): Ys <- matchtype/MatchType$package.Concat#[Ys]
+[8:32..8:37): Tuple -> scala/Tuple#
+[8:42..8:47): Tuple -> scala/Tuple#
+[8:50..8:52): Xs -> matchtype/MatchType$package.Concat#[Xs]
+[9:7..9:17): EmptyTuple -> scala/Tuple$package.EmptyTuple#
+[9:21..9:23): Ys -> matchtype/MatchType$package.Concat#[Ys]
+[10:7..10:8): x <- local1
+[10:9..10:11): *: -> scala/`*:`#
+[10:12..10:14): xs <- local2
+[10:18..10:19): x -> local1
+[10:20..10:22): *: -> scala/`*:`#
+[10:23..10:29): Concat -> matchtype/MatchType$package.Concat#
+[10:30..10:32): xs -> local2
+[10:34..10:36): Ys -> matchtype/MatchType$package.Concat#[Ys]
 
 expect/MetacJava.scala
 ----------------------
