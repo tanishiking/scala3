@@ -65,7 +65,7 @@ object DottyJSPlugin extends AutoPlugin {
 object Build {
   val referenceVersion = "3.0.0"
 
-  val baseVersion = "3.0.2-RC1"
+  val baseVersion = "3.0.3-RC1"
 
   // Versions used by the vscode extension to create a new project
   // This should be the latest published releases.
@@ -81,7 +81,7 @@ object Build {
    *  set to 3.1.3. If it is going to be 3.1.0, it must be set to the latest
    *  3.0.x release.
    */
-  val previousDottyVersion = "3.0.0"
+  val previousDottyVersion = "3.0.1"
 
   object CompatMode {
     final val BinaryCompatible = 0
@@ -325,7 +325,7 @@ object Build {
 
   lazy val scalacOptionsDocSettings = Seq(
       "-external-mappings:" +
-        ".*scala.*::scaladoc3::http://dotty.epfl.ch/api/," +
+        ".*scala.*::scaladoc3::https://dotty.epfl.ch/api/," +
         ".*java.*::javadoc::https://docs.oracle.com/javase/8/docs/api/",
       "-skip-by-regex:.+\\.internal($|\\..+)",
       "-skip-by-regex:.+\\.impl($|\\..+)",
@@ -1245,7 +1245,7 @@ object Build {
       val distLocation = (dist / pack).value
       val projectVersion = version.value
       IO.createDirectory(file(outDir))
-      val stdLibVersion = stdlibVersion(Bootstrapped)
+      val stdLibVersion = stdlibVersion(NonBootstrapped)
       val scalaLib = findArtifactPath(externalCompilerClasspathTask.value, "scala-library")
       val dottyLib = (`scala3-library` / Compile / classDirectory).value
       // TODO add versions etc.
