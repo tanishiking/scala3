@@ -356,6 +356,7 @@ Text => empty
 Language => Scala
 Symbols => 5 entries
 Occurrences => 4 entries
+Synthetics => 1 entries
 
 Symbols:
 angiven/AnonymousGiven$package. => final package object angiven extends Object { self: angiven.type => +2 decls }
@@ -369,6 +370,9 @@ Occurrences:
 [2:6..2:9): Foo <- angiven/Foo#
 [4:4..4:7): bar <- angiven/AnonymousGiven$package.bar().
 [4:14..4:17): Foo -> angiven/Foo#
+
+Synthetics:
+[4:14..4:17):Foo => x$1
 
 expect/Classes.scala
 --------------------
@@ -1222,6 +1226,7 @@ Text => empty
 Language => Scala
 Symbols => 26 entries
 Occurrences => 50 entries
+Synthetics => 2 entries
 
 Symbols:
 ext/Extension$package. => final package object ext extends Object { self: ext.type => +6 decls }
@@ -1302,6 +1307,10 @@ Occurrences:
 [17:44..17:45): U -> ext/Functor#map().[U]
 [17:48..17:49): F -> ext/Functor#[F]
 [17:50..17:51): U -> ext/Functor#map().[U]
+
+Synthetics:
+[14:24..14:31):Read[T] => x$2
+[14:46..14:61):summon[Read[T]] => *(x$2)
 
 expect/ForComprehension.scala
 -----------------------------
@@ -1679,6 +1688,7 @@ Text => empty
 Language => Scala
 Symbols => 45 entries
 Occurrences => 61 entries
+Synthetics => 4 entries
 
 Symbols:
 givens/InventedNames$package. => final package object givens extends Object { self: givens.type => +24 decls }
@@ -1790,6 +1800,12 @@ Occurrences:
 [41:8..41:17): given_Z_T -> givens/InventedNames$package.given_Z_T().
 [41:18..41:24): String -> scala/Predef.String#
 
+Synthetics:
+[15:13..15:16):Int => x$1
+[24:13..24:14):X => x$1
+[34:8..34:20):given_Double => *(intValue)
+[40:8..40:15):given_Y => *(given_X)
+
 expect/Issue1749.scala
 ----------------------
 
@@ -1800,6 +1816,7 @@ Text => empty
 Language => Scala
 Symbols => 7 entries
 Occurrences => 22 entries
+Synthetics => 2 entries
 
 Symbols:
 example/Issue1749# => class Issue1749 extends Object { self: Issue1749 => +3 decls }
@@ -1833,6 +1850,10 @@ Occurrences:
 [13:41..13:47): String -> scala/Predef.String#
 [13:49..13:55): String -> scala/Predef.String#
 [14:2..14:5): map -> example/Issue1854#map.
+
+Synthetics:
+[8:2..8:10):(x1, x1) => *(Tuple2(Int, Int))
+[8:10..8:10): => *(Int, Int)
 
 expect/Local.scala
 ------------------
@@ -1986,6 +2007,7 @@ Text => empty
 Language => Scala
 Symbols => 3 entries
 Occurrences => 80 entries
+Synthetics => 1 entries
 
 Symbols:
 example/MethodUsages# => class MethodUsages extends Object { self: MethodUsages => +2 decls }
@@ -2073,6 +2095,9 @@ Occurrences:
 [34:2..34:3): m -> example/MethodUsages#m.
 [34:4..34:7): m20 -> example/Methods#m20(+2).
 [34:8..34:9): m -> example/Methods#m17.m().
+
+Synthetics:
+[13:2..13:26):m.m7(m, new m.List[Int]) => *(Int)
 
 expect/Methods.scala
 --------------------
@@ -2647,6 +2672,7 @@ Text => empty
 Language => Scala
 Symbols => 65 entries
 Occurrences => 103 entries
+Synthetics => 1 entries
 
 Symbols:
 example/C# => class C extends Object { self: C => +3 decls }
@@ -2820,6 +2846,9 @@ Occurrences:
 [32:49..32:56): pickOne -> example/SpecialRefinement#pickOne().
 [32:57..32:59): as -> example/PickOneRefinement_1#run().(as)
 
+Synthetics:
+[15:23..15:34):elems.toMap => *(refl[<?>])
+
 expect/RightAssociativeExtension.scala
 --------------------------------------
 
@@ -2907,6 +2936,7 @@ Text => empty
 Language => Scala
 Symbols => 40 entries
 Occurrences => 112 entries
+Synthetics => 2 entries
 
 Symbols:
 example/Synthetic# => class Synthetic extends Object { self: Synthetic => +21 decls }
@@ -3063,6 +3093,10 @@ Occurrences:
 [46:9..46:10): < -> scala/Int#`<`(+3).
 [46:11..46:12): b -> local9
 [47:10..47:11): a -> local8
+
+Synthetics:
+[32:35..32:49):Array.empty[T] => *(evidence$1)
+[36:22..36:27):new F => *(ordering)
 
 expect/Traits.scala
 -------------------
@@ -4472,6 +4506,7 @@ Text => empty
 Language => Scala
 Symbols => 19 entries
 Occurrences => 34 entries
+Synthetics => 1 entries
 
 Symbols:
 _empty_/MyProgram# => final class MyProgram extends Object { self: MyProgram => +2 decls }
@@ -4529,4 +4564,7 @@ Occurrences:
 [5:67..5:74): println -> scala/Predef.println(+1).
 [6:4..6:10): fooRef <- _empty_/toplevel$package.fooRef().
 [6:30..6:33): foo -> _empty_/toplevel$package.foo().
+
+Synthetics:
+[5:0..5:0): => *(given_FromString_Int)
 

@@ -222,7 +222,7 @@ class TypeOps:
       }
       loop(tpe)
 
-    private def toSemanticType(sym: Symbol)(using LinkMode, SemanticSymbolBuilder, Context): s.Type =
+    def toSemanticType(sym: Symbol)(using LinkMode, SemanticSymbolBuilder, Context): s.Type =
       import ConstantOps._
       def loop(tpe: Type): s.Type = tpe match {
         case t if t.isFromJavaObject =>
