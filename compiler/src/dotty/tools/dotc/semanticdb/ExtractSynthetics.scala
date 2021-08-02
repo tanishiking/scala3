@@ -15,8 +15,7 @@ class SyntheticsExtractor:
     extension (synth: s.Synthetic)
       def toOpt: Some[s.Synthetic] = Some(synth)
 
-    if !tree.span.isSynthetic then None
-    else
+    if tree.span.isSynthetic || tree.symbol.isInventedGiven then
       tree match
         case tree: Apply if isForSynthetic(tree) =>
           None // not yet supported (for synthetics)
@@ -41,6 +40,7 @@ class SyntheticsExtractor:
             tree.toSemanticId
           ).toOpt
         case _ => None
+    else None
 
   extension (tree: Tree)
     private def toSemanticTree(using Context, SemanticSymbolBuilder, TypeOps): s.Tree =

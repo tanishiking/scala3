@@ -215,6 +215,13 @@ object Scala3:
       def isSyntheticWithIdent(using Context): Boolean =
         sym.is(Synthetic) && !sym.isAnonymous && !sym.name.isEmptyNumbered
 
+      /** Check if the symbol is invented by Desugar.inventGivenOrExtensionName
+       *  return true if the symbol is defined as `given Int = ...` and name is invented as "given_Int"
+       */
+      def isInventedGiven(using Context): Boolean =
+        sym.is(Given) && sym.name.startsWith("given_")
+
+
       def symbolInfo(symkinds: Set[SymbolKind])(using LinkMode, TypeOps, SemanticSymbolBuilder, Context): SymbolInformation =
         val kind = sym.symbolKind(symkinds)
         val sname = sym.symbolName

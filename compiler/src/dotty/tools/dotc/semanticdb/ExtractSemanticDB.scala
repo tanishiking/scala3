@@ -166,6 +166,13 @@ class ExtractSemanticDB extends Phase:
                 if !tree.symbol.isGlobal then
                   localBodies(tree.symbol) = tree.rhs
                 // ignore rhs
+
+              // `given Int` (syntax sugar of `given given_Int: Int`)
+              case tree: ValDef if tree.symbol.isInventedGiven =>
+                synth.tryFindSynthetic(tree).foreach { synth =>
+                  synthetics += synth
+                }
+                traverse(tree.tpt)
               case PatternValDef(pat, rhs) =>
                 traverse(rhs)
                 PatternValDef.collectPats(pat).foreach(traverse)
@@ -220,8 +227,6 @@ class ExtractSemanticDB extends Phase:
           traverse(tree.rhs)
         case tree: Ident =>
           if tree.name != nme.WILDCARD then
-            // if tree.span.isSynthetic && !namePresentInSource(tree.symbol, tree.span, tree.source) then
-            //   println(s"${tree}, ${tree.line}")
             val sym = tree.symbol.adjustIfCtorTyparam
             registerUseGuarded(None, sym, tree.span, tree.source)
         case tree: Select =>
