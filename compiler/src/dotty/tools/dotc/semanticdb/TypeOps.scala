@@ -420,6 +420,9 @@ class TypeOps:
         case _: MatchType =>
           s.Type.Empty
 
+        case tvar: TypeVar =>
+          loop(tvar.stripped)
+
         case _ =>
           s.Type.Empty
       }

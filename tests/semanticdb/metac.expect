@@ -2847,7 +2847,7 @@ Occurrences:
 [32:57..32:59): as -> example/PickOneRefinement_1#run().(as)
 
 Synthetics:
-[15:23..15:34):elems.toMap => *(refl[<?>])
+[15:23..15:34):elems.toMap => *(refl[Tuple2[String, Any]])
 
 expect/RightAssociativeExtension.scala
 --------------------------------------
