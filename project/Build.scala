@@ -759,7 +759,24 @@ object Build {
     if (mode == NonBootstrapped) nonBootstrapedDottyCompilerSettings else bootstrapedDottyCompilerSettings
 
   lazy val `scala3-compiler` = project.in(file("compiler")).asDottyCompiler(NonBootstrapped)
+
+  lazy val Scala3CompilerCoursierTest = config("scala3CompilerCoursierTest") extend Test
   lazy val `scala3-compiler-bootstrapped` = project.in(file("compiler")).asDottyCompiler(Bootstrapped)
+    .configs(Scala3CompilerCoursierTest)
+    .settings(
+      inConfig(Scala3CompilerCoursierTest)(Defaults.testSettings),
+      Scala3CompilerCoursierTest / scalaSource := baseDirectory.value / "test-coursier",
+      Scala3CompilerCoursierTest / fork := true,
+      Scala3CompilerCoursierTest / envVars := Map("DOTTY_BOOTSTRAPPED_VERSION" -> dottyVersion),
+      Scala3CompilerCoursierTest / unmanagedClasspath += (Scala3CompilerCoursierTest / scalaSource).value,
+      Scala3CompilerCoursierTest / test := ((Scala3CompilerCoursierTest / test) dependsOn (
+          publishLocal, // Had to enumarate all deps since calling `scala3-bootstrap` / publishLocal will lead to recursive dependency => stack overflow
+          `scala3-interfaces` / publishLocal,
+          dottyLibrary(Bootstrapped) / publishLocal,
+          tastyCore(Bootstrapped) / publishLocal,
+        ),
+      ).value,
+    )
 
   def dottyCompiler(implicit mode: Mode): Project = mode match {
     case NonBootstrapped => `scala3-compiler`
@@ -1267,7 +1284,8 @@ object Build {
         scalaSrcLink(stdLibVersion, srcManaged(dottyNonBootstrappedVersion, "scala") + "="),
         dottySrcLink(referenceVersion, srcManaged(dottyNonBootstrappedVersion, "dotty") + "=", "#library/src"),
         dottySrcLink(referenceVersion),
-      ) ++ scalacOptionsDocSettings ++ revision ++ params ++ targets ++ Seq("-Ygenerate-inkuire")
+        "-Ygenerate-inkuire",
+      ) ++ scalacOptionsDocSettings ++ revision ++ params ++ targets
       import _root_.scala.sys.process._
       val escapedCmd = cmd.map(arg => if(arg.contains(" ")) s""""$arg"""" else arg)
       Def.task {
@@ -1325,6 +1343,7 @@ object Build {
       generateScalaDocumentation := Def.inputTaskDyn {
         val extraArgs = spaceDelimited("[output]").parsed
         val dest = file(extraArgs.headOption.getOrElse("scaladoc/output/scala3")).getAbsoluteFile
+        val justAPI = extraArgs.drop(1).headOption == Some("--justAPI")
         val majorVersion = (LocalProject("scala3-library-bootstrapped") / scalaBinaryVersion).value
 
         val dottyJars: Seq[java.io.File] = Seq(
@@ -1346,21 +1365,26 @@ object Build {
 
         val dottyLibRoot = projectRoot.relativize(dottyManagesSources.toPath.normalize())
 
+        def generateDocTask =
+          generateDocumentation(
+            roots, "Scala 3", dest.getAbsolutePath, "master",
+            Seq(
+              "-comment-syntax", "wiki",
+              s"-source-links:docs=github://lampepfl/dotty/master#docs",
+              "-doc-root-content", docRootFile.toString,
+              "-versions-dictionary-url",
+              "https://scala-lang.org/api/versions.json",
+              "-Ydocument-synthetic-types"
+            ) ++ (if (justAPI) Nil else Seq("-siteroot", "docs", "-Yapi-subdirectory")))
+
         if (dottyJars.isEmpty) Def.task { streams.value.log.error("Dotty lib wasn't found") }
+        else if (justAPI) generateDocTask
         else Def.task{
           IO.write(dest / "versions" / "latest-nightly-base", majorVersion)
 
           // This file is used by GitHub Pages when the page is available in a custom domain
           IO.write(dest / "CNAME", "dotty.epfl.ch")
-        }.dependsOn(generateDocumentation(
-          roots, "Scala 3", dest.getAbsolutePath, "master",
-          Seq(
-            "-comment-syntax", "wiki",
-            "-siteroot", "docs",
-            s"-source-links:docs=github://lampepfl/dotty/master#docs",
-            "-doc-root-content", docRootFile.toString,
-            "-Ydocument-synthetic-types"
-          )))
+        }.dependsOn(generateDocTask)
       }.evaluated,
 
       generateTestcasesDocumentation := Def.taskDyn {

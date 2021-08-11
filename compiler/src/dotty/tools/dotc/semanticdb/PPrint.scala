@@ -29,12 +29,13 @@ class SymbolInformationPrinter (symtab: PrinterSymtab):
         SymbolInformation(symbol = sym, displayName = displayName)
       }
   end InfoNotes
+
   class InfoPrinter(notes: InfoNotes):
     private enum SymbolStyle:
       case Reference, Definition
     def pprint(info: SymbolInformation): String =
       val sb = new StringBuilder()
-      sb.append(pprintAccess(info.access))
+      sb.append(accessString(info.access))
       if info.isAbstract then sb.append("abstract ")
       if info.isFinal then sb.append("final ")
       if info.isSealed then sb.append("sealed ")
@@ -49,6 +50,12 @@ class SymbolInformationPrinter (symtab: PrinterSymtab):
       if info.isPrimary then sb.append("primary ")
       if info.isEnum then sb.append("enum ")
       if info.isDefault then sb.append("default ")
+      if info.isGiven then sb.append("given ")
+      if info.isInline then sb.append("inline ")
+      if info.isOpen then sb.append("open ")
+      if info.isTransparent then sb.append("transparent ")
+      if info.isInfix then sb.append("infix ")
+      if info.isOpaque then sb.append("opaque ")
       info.kind match
         case LOCAL => sb.append("local ")
         case FIELD => sb.append("field ")
@@ -237,6 +244,18 @@ class SymbolInformationPrinter (symtab: PrinterSymtab):
           "null"
       }
 
+    private def accessString(access: Access): String =
+      access match
+        case Access.Empty => ""
+        case _: PublicAccess => ""
+        case _: PrivateAccess => "private "
+        case _: ProtectedAccess => "protected "
+        case _: PrivateThisAccess => "private[this] "
+        case _: ProtectedThisAccess => "protected[this] "
+        case PrivateWithinAccess(ssym) =>
+          s"private[${ssym}] "
+        case ProtectedWithinAccess(ssym) =>
+          s"protected[${ssym}] "
     extension (scope: Scope)
       private def infos: List[SymbolInformation] =
         if (scope.symlinks.nonEmpty)
@@ -251,6 +270,7 @@ class SymbolInformationPrinter (symtab: PrinterSymtab):
       }
   end InfoPrinter
 end SymbolInformationPrinter
+
 extension (info: SymbolInformation)
   def prefixBeforeTpe: String = {
     info.kind match {

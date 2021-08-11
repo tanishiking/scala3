@@ -55,10 +55,10 @@ object Scaladoc:
     docCanonicalBaseUrl: String = "",
     documentSyntheticTypes: Boolean = false,
     snippetCompiler: List[String] = Nil,
-    snippetCompilerDebug: Boolean = false,
     noLinkWarnings: Boolean = false,
     versionsDictionaryUrl: Option[String] = None,
-    generateInkuire : Boolean = false
+    generateInkuire : Boolean = false,
+    apiSubdirectory : Boolean = false
   )
 
   def run(args: Array[String], rootContext: CompilerContext): Reporter =
@@ -221,9 +221,9 @@ object Scaladoc:
         YdocumentSyntheticTypes.get,
         snippetCompiler.get,
         noLinkWarnings.get,
-        snippetCompilerDebug.get,
         versionsDictionaryUrl.nonDefault,
-        generateInkuire.get
+        generateInkuire.get,
+        apiSubdirectory.get,
       )
       (Some(docArgs), newContext)
     }

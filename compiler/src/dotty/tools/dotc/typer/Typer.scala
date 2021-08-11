@@ -1478,8 +1478,10 @@ class Typer extends Namer
       case _ =>
         if tree.isInline then checkInInlineContext("inline match", tree.srcPos)
         val sel1 = typedExpr(tree.selector)
-        val selType = fullyDefinedType(sel1.tpe, "pattern selector", tree.span).widen
-
+        val rawSelectorTpe = fullyDefinedType(sel1.tpe, "pattern selector", tree.span)
+        val selType = rawSelectorTpe match
+          case c: ConstantType if tree.isInline => c
+          case otherTpe => otherTpe.widen
         /** Extractor for match types hidden behind an AppliedType/MatchAlias */
         object MatchTypeInDisguise {
           def unapply(tp: AppliedType): Option[MatchType] = tp match {
@@ -1870,8 +1872,7 @@ class Typer extends Namer
             arg match {
               case untpd.WildcardTypeBoundsTree()
               if tparam.paramInfo.isLambdaSub &&
-                 tpt1.tpe.typeParamSymbols.nonEmpty &&
-                 !ctx.mode.is(Mode.Pattern) =>
+                 tpt1.tpe.typeParamSymbols.nonEmpty =>
                 // An unbounded `_` automatically adapts to type parameter bounds. This means:
                 // If we have wildcard application C[?], where `C` is a class replace
                 // with C[? >: L <: H] where `L` and `H` are the bounds of the corresponding
@@ -3158,7 +3159,7 @@ class Typer extends Namer
    */
   def adapt(tree: Tree, pt: Type, locked: TypeVars, tryGadtHealing: Boolean = true)(using Context): Tree =
     try
-      trace(i"adapting $tree to $pt ${if (tryGadtHealing) "" else "(tryGadtHealing=false)" }\n", typr, show = true) {
+      trace(i"adapting $tree to $pt ${if (tryGadtHealing) "" else "(tryGadtHealing=false)" }", typr, show = true) {
         record("adapt")
         adapt1(tree, pt, locked, tryGadtHealing)
       }
@@ -3882,7 +3883,7 @@ class Typer extends Namer
           // - it complicates the protocol
           // - such code patterns usually implies hidden errors in the code
           // - it's safe/sound to reject the code
-          report.error(TypeMismatch(tree.tpe, pt, "\npattern type is incompatible with expected type"), tree.srcPos)
+          report.error(TypeMismatch(tree.tpe, pt, Some(tree), "\npattern type is incompatible with expected type"), tree.srcPos)
         else
           val cmp =
             untpd.Apply(

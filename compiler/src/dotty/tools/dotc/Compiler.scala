@@ -3,7 +3,8 @@ package dotc
 
 import core._
 import Contexts._
-import typer.{FrontEnd, RefChecks}
+import typer.{TyperPhase, RefChecks}
+import parsing.Parser
 import Phases.Phase
 import transform._
 import dotty.tools.backend.jvm.{CollectSuperCalls, GenBCode}
@@ -36,7 +37,8 @@ class Compiler {
 
   /** Phases dealing with the frontend up to trees ready for TASTY pickling */
   protected def frontendPhases: List[List[Phase]] =
-    List(new FrontEnd) ::           // Compiler frontend: scanner, parser, namer, typer
+    List(new Parser) ::             // Compiler frontend: scanner, parser
+    List(new TyperPhase) ::         // Compiler frontend: namer, typer
     List(new YCheckPositions) ::    // YCheck positions
     List(new sbt.ExtractDependencies) :: // Sends information on classes' dependencies to sbt via callbacks
     List(new semanticdb.ExtractSemanticDB) :: // Extract info into .semanticdb files
@@ -64,8 +66,8 @@ class Compiler {
          new CheckStatic,            // Check restrictions that apply to @static members
          new BetaReduce,             // Reduce closure applications
          new InlineVals,             // Check right hand-sides of an `inline val`s
-         new ExpandSAMs,             // Expand single abstract method closures to anonymous classes
-         new init.Checker) ::        // Check initialization of objects
+         new ExpandSAMs) ::          // Expand single abstract method closures to anonymous classes
+    List(new init.Checker) ::        // Check initialization of objects
     List(new ElimRepeated,           // Rewrite vararg parameters and arguments
          new ProtectedAccessors,     // Add accessors for protected members
          new ExtensionMethods,       // Expand methods of value classes with extension methods
@@ -73,10 +75,10 @@ class Compiler {
          new ByNameClosures,         // Expand arguments to by-name parameters to closures
          new HoistSuperArgs,         // Hoist complex arguments of supercalls to enclosing scope
          new SpecializeApplyMethods, // Adds specialized methods to FunctionN
-         new RefChecks) ::           // Various checks mostly related to abstract members and overriding
-    List(new ElimOpaque,             // Turn opaque into normal aliases
+         new RefChecks,              // Various checks mostly related to abstract members and overriding
          new TryCatchPatterns,       // Compile cases in try/catch
-         new PatternMatcher,         // Compile pattern matches
+         new PatternMatcher) ::      // Compile pattern matches
+    List(new ElimOpaque,             // Turn opaque into normal aliases
          new sjs.ExplicitJSClasses,  // Make all JS classes explicit (Scala.js only)
          new ExplicitOuter,          // Add accessors to outer classes from nested ones.
          new ExplicitSelf,           // Make references to non-trivial self types explicit as casts

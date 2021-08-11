@@ -23,6 +23,8 @@ import scala.collection.mutable
 import scala.annotation.{ threadUnsafe => tu, tailrec }
 import scala.PartialFunction.condOpt
 
+import dotty.tools.dotc.{semanticdb => s}
+
 /** Extract symbol references and uses to semanticdb files.
  *  See https://scalameta.org/docs/semanticdb/specification.html#symbol-1
  *  for a description of the format.
@@ -339,7 +341,7 @@ class ExtractSemanticDB extends Phase:
       else
         val content = source.content()
         val (start, end) =
-          if content.lift(span.end - 1).map(_ == '`').getOrElse(false) then
+          if content.lift(span.end - 1).exists(_ == '`') then
             (span.start + 1, span.end - 1)
           else (span.start, span.end)
         val nameInSource = content.slice(start, end).mkString

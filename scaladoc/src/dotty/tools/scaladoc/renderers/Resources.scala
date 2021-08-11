@@ -52,6 +52,16 @@ trait Resources(using ctx: DocContext) extends Locations, Writer:
         case "js" => script(`type` := "text/javascript", src := resolveLink(dri, res), if (deferJs) Seq(defer := "true") else Nil)
         case _ => raw("")
 
+  val onlyRenderedResources: Seq[Resource] =
+    List(
+      ("https://github.com/VirtusLab/Inkuire/releases/download/1.0.0-M2/inkuire.js", "scripts/inkuire.js"),
+    ).map { case (url, path) =>
+      Resource.URLToCopy(url, path)
+    } ++
+    List(
+      "scripts/inkuire-worker.js"
+    ).map(dottyRes)
+
   val earlyMemberResources: Seq[Resource] =
     List(
       "scripts/theme.js"
@@ -78,24 +88,19 @@ trait Resources(using ctx: DocContext) extends Locations, Writer:
       "scripts/components/Input.js",
       "scripts/components/FilterGroup.js",
       "scripts/components/Filter.js",
-      "scripts/searchbar.js",
-      "scripts/inkuire-worker.js"
+      "scripts/searchbar.js"
     ).map(dottyRes)
 
     val urls = List(
       "https://code.jquery.com/jquery-3.5.1.min.js",
+      "https://use.fontawesome.com/releases/v5.15.3/js/all.js",
       "https://d3js.org/d3.v6.min.js",
       "https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.2/dist/graphlib-dot.min.js",
       "https://cdnjs.cloudflare.com/ajax/libs/dagre-d3/0.6.1/dagre-d3.min.js",
     ).map(Resource.URL.apply)
 
-    val urlToPathMappings = List(
-      ("https://github.com/VirtusLab/Inkuire/releases/download/1.0.0-M1/inkuire.js", "scripts/inkuire.js"),
-    ).map { case (url, path) =>
-      Resource.URLToCopy(url, path)
-    }
 
-    fromResources ++ urls ++ urlToPathMappings ++ projectLogo ++ Seq(scaladocVersionFile, dynamicJsData)
+    fromResources ++ urls ++ projectLogo ++ Seq(scaladocVersionFile, dynamicJsData)
 
   val searchDataPath = "scripts/searchData.js"
   val memberResourcesPaths = Seq(searchDataPath) ++ memberResources.map(_.path)
@@ -171,19 +176,24 @@ trait Resources(using ctx: DocContext) extends Locations, Writer:
   )
 
   def renderResource(resource: Resource): Seq[String] =
-    resource match
-      case Resource.Text(path, content) =>
-        Seq(write(path, content))
-      case Resource.Classpath(path, name) =>
-        getClass.getClassLoader.getResourceAsStream(name) match
-          case null =>
-            report.error(s"Unable to find $name on classpath")
-            Nil
-          case is =>
-            try Seq(copy(is, path)) finally is.close()
-      case Resource.File(path, file) =>
-        Seq(copy(file, path))
-      case Resource.URL(url) =>
-        Nil
-      case Resource.URLToCopy(url, dest) =>
-        Seq(copy(new URL(url).openStream(), dest))
+    val normalizedPath = resource.path.replace('\\', '/')
+    if normalizedPath.endsWith(".html") && apiPaths.contains(normalizedPath) then
+      report.error(s"Conflict between resource and API member for $normalizedPath. $pathsConflictResoultionMsg")
+      Nil
+    else
+      resource match
+        case Resource.Text(path, content) =>
+          Seq(write(path, content))
+        case Resource.Classpath(path, name) =>
+          getClass.getClassLoader.getResourceAsStream(name) match
+            case null =>
+              report.error(s"Unable to find $name on classpath")
+              Nil
+            case is =>
+              try Seq(copy(is, path)) finally is.close()
+        case Resource.File(path, file) =>
+          Seq(copy(file, path))
+        case Resource.URL(url) =>
+          Nil
+        case Resource.URLToCopy(url, dest) =>
+          Seq(copy(new URL(url).openStream(), dest))

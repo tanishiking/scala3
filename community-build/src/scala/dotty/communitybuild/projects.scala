@@ -140,7 +140,7 @@ final case class SbtCommunityProject(
       case Some(ivyHome) => List(s"-Dsbt.ivy.home=$ivyHome")
       case _ => Nil
     extraSbtArgs ++ sbtProps ++ List(
-      "-sbt-version", "1.5.0",
+      "-sbt-version", "1.5.5",
       "-Dsbt.supershell=false",
       s"-Ddotty.communitybuild.dir=$communitybuildDir",
       s"--addPluginSbtFile=$sbtPluginFilePath"
@@ -508,6 +508,14 @@ object projects:
     sbtPublishCommand = "compat30/publishLocal",
   )
 
+  lazy val scalaJava8Compat = SbtCommunityProject(
+    project        = "scala-java8-compat",
+    // the fnGen subproject must be built with 2.12.x
+    sbtTestCommand = s"++2.12.14; ++$compilerVersion; set fnGen/dependencyOverrides := Nil; test",
+    sbtPublishCommand = s"++2.12.14; ++$compilerVersion; set fnGen/dependencyOverrides := Nil; publishLocal",
+    scalacOptions = Nil // avoid passing Scala 3 options to Scala 2.12 in fnGen subproject
+  )
+
   lazy val verify = SbtCommunityProject(
     project        = "verify",
     sbtTestCommand = "verifyJVM/test",
@@ -716,6 +724,13 @@ object projects:
     dependencies = List(scalatest)
   )
 
+  lazy val jacksonModuleScala = SbtCommunityProject(
+    project = "jackson-module-scala",
+    sbtTestCommand = "test",
+    sbtPublishCommand = "publishLocal",
+    dependencies = List(scalaJava8Compat, scalatest)
+  )
+
 end projects
 
 def allProjects = List(
@@ -762,6 +777,7 @@ def allProjects = List(
   projects.catsEffect3,
   projects.scalaParallelCollections,
   projects.scalaCollectionCompat,
+  projects.scalaJava8Compat,
   projects.verify,
   projects.discipline,
   projects.disciplineMunit,
@@ -792,6 +808,7 @@ def allProjects = List(
   projects.scalacheckEffect,
   projects.fs2,
   projects.libretto,
+  projects.jacksonModuleScala,
 )
 
 lazy val projectMap = allProjects.groupBy(_.project)
