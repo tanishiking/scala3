@@ -17,99 +17,99 @@ class SyntheticsExtractor:
     extension (synth: s.Synthetic)
       def toOpt: Some[s.Synthetic] = Some(synth)
 
+    val forSynthetic = tree match // not yet supported (for synthetics)
+      case tree: Apply if isForSynthetic(tree) => true
+      case tree: TypeApply if isForSynthetic(tree) => true
+      case _ => false
+
     // println(s"${tree.span.isSynthetic}: ${tree}")
-    if visited.contains(tree) then None
+    if visited.contains(tree) || forSynthetic then None
     else
-      if tree.span.isSynthetic || isInventedGiven(tree) then
-        tree match
-          case tree: Apply if isForSynthetic(tree) =>
-            None // not yet supported (for synthetics)
-          case tree: TypeApply if isForSynthetic(tree) =>
-            None // not yet supported (for synthetics)
-          case tree: TypeApply
-            if tree.args.forall(arg => !arg.symbol.is(Scala2x)) &&
-              !tree.span.isZeroExtent =>
-            // println(tree)
-            // println(tree.args.foreach(arg => println(arg.symbol.flagsString)))
-            // println("===")
-            // println(tree)
-            // println(tree.symbol.flagsString)
-            // println(tree.fun.symbol.flagsString)
-            // tree.args.foreach(targ => println(targ.symbol.flagsString))
-            visited.add(tree)
-            val fnTree = tree.fun match
-              // Something like `List.apply[Int](1,2,3)`
-              case select @ Select(qual, _) if isSyntheticName(select) =>
-                s.SelectTree(
-                  s.OriginalTree(range(qual.span, tree.source)),
-                  Some(select.toSemanticId)
-                )
-              case _ =>
-                s.OriginalTree(
-                  range(tree.fun.span, tree.source)
-                )
-            val targs = tree.args.map(targ => targ.tpe.toSemanticType(targ.symbol)(using LinkMode.SymlinkChildren))
-            s.Synthetic(
-              range(tree.span, tree.source),
+      tree match
+        case tree: TypeApply
+          if tree.span.isSynthetic &&
+            tree.args.forall(arg => !arg.symbol.is(Scala2x)) &&
+            !tree.span.isZeroExtent =>
+          // println(tree)
+          // println(tree.args.foreach(arg => println(arg.symbol.flagsString)))
+          // println("===")
+          // println(tree)
+          // println(tree.symbol.flagsString)
+          // println(tree.fun.symbol.flagsString)
+          // tree.args.foreach(targ => println(targ.symbol.flagsString))
+          visited.add(tree)
+          val fnTree = tree.fun match
+            // Something like `List.apply[Int](1,2,3)`
+            case select @ Select(qual, _) if isSyntheticName(select) =>
+              s.SelectTree(
+                s.OriginalTree(range(qual.span, tree.source)),
+                Some(select.toSemanticId)
+              )
+            case _ =>
+              s.OriginalTree(
+                range(tree.fun.span, tree.source)
+              )
+          val targs = tree.args.map(targ => targ.tpe.toSemanticType(targ.symbol)(using LinkMode.SymlinkChildren))
+          s.Synthetic(
+            range(tree.span, tree.source),
+            s.TypeApplyTree(
+              fnTree, targs
+            )
+          ).toOpt
+
+        case tree: Apply
+          if tree.args.nonEmpty &&
+            tree.args.forall(arg =>
+              arg.symbol.isOneOf(GivenOrImplicit) &&
+              arg.span.isSynthetic
+            ) =>
+          s.Synthetic(
+            range(tree.span, tree.source),
+            s.ApplyTree(
+              tree.fun.toSemanticOriginal,
+              tree.args.map(_.toSemanticTree)
+            )
+          ).toOpt
+
+        case tree: Apply if tree.fun.symbol.is(Implicit) && tree.fun.span.isSynthetic =>
+          val pos = range(tree.span, tree.source)
+          s.Synthetic(
+            pos,
+            s.ApplyTree(
+              tree.fun.toSemanticTree,
+              arguments = List(
+                s.OriginalTree(pos)
+              )
+            )
+          ).toOpt
+
+        // Anonymous context parameter
+        case tree: ValDef if tree.symbol.is(Given) || isInventedGiven(tree) =>
+          s.Synthetic(
+            range(tree.span, tree.source),
+            tree.toSemanticId
+          ).toOpt
+
+        // (1, 2) => Tuple.apply((1, 2))
+        case tree @ Apply(tapp @ TypeApply(select: Select, targs), args)
+          if !visited.contains(tapp) &&
+            tapp.span.isSynthetic &&
+            tree.span.isSourceDerived =>
+          val pos = range(tree.span, tree.source)
+          val stargs = targs.map(targ => targ.tpe.toSemanticType(targ.symbol)(using LinkMode.SymlinkChildren))
+          s.Synthetic(
+            pos,
+            s.ApplyTree(
               s.TypeApplyTree(
-                fnTree, targs
+                select.toSemanticQualifierTree,
+                stargs,
+              ),
+              List(
+                s.OriginalTree(pos)
               )
-            ).toOpt
-          case tree: Apply
-            if tree.args.nonEmpty &&
-              tree.args.forall(arg =>
-                arg.symbol.isOneOf(GivenOrImplicit) &&
-                arg.span.isSynthetic
-              ) =>
-            s.Synthetic(
-              range(tree.span, tree.source),
-              s.ApplyTree(
-                tree.fun.toSemanticOriginal,
-                tree.args.map(_.toSemanticTree)
-              )
-            ).toOpt
-
-          case tree: Apply if tree.fun.symbol.is(Implicit) =>
-            val pos = range(tree.span, tree.source)
-            s.Synthetic(
-              pos,
-              s.ApplyTree(
-                tree.fun.toSemanticTree,
-                arguments = List(
-                  s.OriginalTree(pos)
-                )
-              )
-            ).toOpt
-
-          // Anonymous context parameter
-          case tree: ValDef if tree.symbol.is(Given) =>
-            s.Synthetic(
-              range(tree.span, tree.source),
-              tree.toSemanticId
-            ).toOpt
-          case _ => None
-      else
-        tree match
-          case tree: Apply if isForSynthetic(tree) =>
-            None // not yet supported (for synthetics)
-          case tree: TypeApply if isForSynthetic(tree) =>
-            None // not yet supported (for synthetics)
-          case tree @ Apply(tapp @ TypeApply(select: Select, targs), args) if !visited.contains(tapp) =>
-            val pos = range(tree.span, tree.source)
-            val stargs = targs.map(targ => targ.tpe.toSemanticType(targ.symbol)(using LinkMode.SymlinkChildren))
-            s.Synthetic(
-              pos,
-              s.ApplyTree(
-                s.TypeApplyTree(
-                  select.toSemanticQualifierTree,
-                  stargs,
-                ),
-                List(
-                  s.OriginalTree(pos)
-                )
-              )
-            ).toOpt
-          case _ => None
+            )
+          ).toOpt
+        case _ => None
 
   private given TreeOps: AnyRef with
     extension (tree: Tree)

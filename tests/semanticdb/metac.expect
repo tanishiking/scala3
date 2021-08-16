@@ -834,7 +834,7 @@ Text => empty
 Language => Scala
 Symbols => 181 entries
 Occurrences => 148 entries
-Synthetics => 9 entries
+Synthetics => 10 entries
 
 Symbols:
 _empty_/Enums. => final object Enums extends Object { self: Enums.type => +30 decls }
@@ -1176,6 +1176,7 @@ Synthetics:
 [52:19..52:30):opt.flatMap => *[B]
 [52:31..52:50):identity[Option[B]] => *[Function1[A, Option[B]]]
 [54:14..54:18):Some => *.apply[Some[Int]]
+[54:14..54:34):Some(Some(1)).unwrap => *(given_<:<_T_T[Option[Int]])
 [54:19..54:23):Some => *.apply[Int]
 [54:28..54:34):unwrap => *[Some[Int], Int]
 [56:52..56:64):Enum[Planet] => *[Planet]
@@ -3804,7 +3805,7 @@ Text => empty
 Language => Scala
 Symbols => 24 entries
 Occurrences => 39 entries
-Synthetics => 2 entries
+Synthetics => 1 entries
 
 Symbols:
 _empty_/Copy# => trait Copy [typeparam In  <: Txn[In], typeparam Out  <: Txn[Out]] extends Object { self: Copy[In, Out] => +5 decls }
@@ -3874,7 +3875,6 @@ Occurrences:
 [17:4..17:7): out -> local0
 
 Synthetics:
-[11:14..11:32):copyImpl[Repr](in) => copyImpl[Repr](*)
 [12:4..12:13):(in, out) => Tuple2.apply[Repr[In], Repr[Out]](*)
 
 expect/inlineconsume.scala
