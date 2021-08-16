@@ -19,9 +19,9 @@ class SyntheticsExtractor:
       tree match
         case tree: Apply if isForSynthetic(tree) =>
           None // not yet supported (for synthetics)
-        case tree: TypeApply =>
-          println(tree)
-          println(tree.args.foreach(arg => println(arg.symbol.flagsString)))
+        case tree: TypeApply if tree.args.forall(arg => !arg.symbol.is(Scala2x)) =>
+          // println(tree)
+          // println(tree.args.foreach(arg => println(arg.symbol.flagsString)))
           // println("===")
           // println(tree)
           // println(tree.symbol.flagsString)
