@@ -24,6 +24,8 @@ class SyntheticsExtractor:
         tree match
           case tree: Apply if isForSynthetic(tree) =>
             None // not yet supported (for synthetics)
+          case tree: TypeApply if isForSynthetic(tree) =>
+            None // not yet supported (for synthetics)
           case tree: TypeApply
             if tree.args.forall(arg => !arg.symbol.is(Scala2x)) &&
               !tree.span.isZeroExtent =>
@@ -88,6 +90,10 @@ class SyntheticsExtractor:
           case _ => None
       else
         tree match
+          case tree: Apply if isForSynthetic(tree) =>
+            None // not yet supported (for synthetics)
+          case tree: TypeApply if isForSynthetic(tree) =>
+            None // not yet supported (for synthetics)
           case tree @ Apply(tapp @ TypeApply(select: Select, targs), args) if !visited.contains(tapp) =>
             val pos = range(tree.span, tree.source)
             val stargs = targs.map(targ => targ.tpe.toSemanticType(targ.symbol)(using LinkMode.SymlinkChildren))
