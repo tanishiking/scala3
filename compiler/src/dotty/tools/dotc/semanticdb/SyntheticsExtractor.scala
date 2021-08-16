@@ -11,14 +11,52 @@ import scala.collection.mutable
 class SyntheticsExtractor:
   import Scala3.{_, given}
 
+  val visited = collection.mutable.HashSet[Tree]()
+
   def tryFindSynthetic(tree: Tree)(using Context, SemanticSymbolBuilder, TypeOps): Option[s.Synthetic] =
     extension (synth: s.Synthetic)
       def toOpt: Some[s.Synthetic] = Some(synth)
 
-    if tree.span.isSynthetic || isInventedGiven(tree) then
+    val forSynthetic = tree match // not yet supported (for synthetics)
+      case tree: Apply if isForSynthetic(tree) => true
+      case tree: TypeApply if isForSynthetic(tree) => true
+      case _ => false
+
+    // println(s"${tree.span.isSynthetic}: ${tree}")
+    if visited.contains(tree) || forSynthetic then None
+    else
       tree match
-        case tree: Apply if isForSynthetic(tree) =>
-          None // not yet supported (for synthetics)
+        case tree: TypeApply
+          if tree.span.isSynthetic &&
+            tree.args.forall(arg => !arg.symbol.is(Scala2x)) &&
+            !tree.span.isZeroExtent =>
+          // println(tree)
+          // println(tree.args.foreach(arg => println(arg.symbol.flagsString)))
+          // println("===")
+          // println(tree)
+          // println(tree.symbol.flagsString)
+          // println(tree.fun.symbol.flagsString)
+          // tree.args.foreach(targ => println(targ.symbol.flagsString))
+          visited.add(tree)
+          val fnTree = tree.fun match
+            // Something like `List.apply[Int](1,2,3)`
+            case select @ Select(qual, _) if isSyntheticName(select) =>
+              s.SelectTree(
+                s.OriginalTree(range(qual.span, tree.source)),
+                Some(select.toSemanticId)
+              )
+            case _ =>
+              s.OriginalTree(
+                range(tree.fun.span, tree.source)
+              )
+          val targs = tree.args.map(targ => targ.tpe.toSemanticType(targ.symbol)(using LinkMode.SymlinkChildren))
+          s.Synthetic(
+            range(tree.span, tree.source),
+            s.TypeApplyTree(
+              fnTree, targs
+            )
+          ).toOpt
+
         case tree: Apply
           if tree.args.nonEmpty &&
             tree.args.forall(arg =>
@@ -33,7 +71,7 @@ class SyntheticsExtractor:
             )
           ).toOpt
 
-        case tree: Apply if tree.fun.symbol.is(Implicit) =>
+        case tree: Apply if tree.fun.symbol.is(Implicit) && tree.fun.span.isSynthetic =>
           val pos = range(tree.span, tree.source)
           s.Synthetic(
             pos,
@@ -46,13 +84,32 @@ class SyntheticsExtractor:
           ).toOpt
 
         // Anonymous context parameter
-        case tree: ValDef if tree.symbol.is(Given) =>
+        case tree: ValDef if tree.symbol.is(Given) || isInventedGiven(tree) =>
           s.Synthetic(
             range(tree.span, tree.source),
             tree.toSemanticId
           ).toOpt
+
+        // (1, 2) => Tuple.apply((1, 2))
+        case tree @ Apply(tapp @ TypeApply(select: Select, targs), args)
+          if !visited.contains(tapp) &&
+            tapp.span.isSynthetic &&
+            tree.span.isSourceDerived =>
+          val pos = range(tree.span, tree.source)
+          val stargs = targs.map(targ => targ.tpe.toSemanticType(targ.symbol)(using LinkMode.SymlinkChildren))
+          s.Synthetic(
+            pos,
+            s.ApplyTree(
+              s.TypeApplyTree(
+                select.toSemanticQualifierTree,
+                stargs,
+              ),
+              List(
+                s.OriginalTree(pos)
+              )
+            )
+          ).toOpt
         case _ => None
-    else None
 
   private given TreeOps: AnyRef with
     extension (tree: Tree)
@@ -86,6 +143,16 @@ class SyntheticsExtractor:
         s.OriginalTree(range(tree.span, tree.source))
   end TreeOps
 
+  private def isSyntheticName(select: Select): Boolean =
+    select.span.toSynthetic == select.qualifier.span.toSynthetic && (
+      select.name == nme.apply ||
+      select.name == nme.update ||
+      select.name == nme.foreach ||
+      select.name == nme.withFilter ||
+      select.name == nme.flatMap ||
+      select.name == nme.map ||
+      select.name == nme.unapplySeq ||
+      select.name == nme.unapply)
 
   private def isForSynthetic(tree: Tree): Boolean =
     def isForComprehensionSyntheticName(select: Select): Boolean =
