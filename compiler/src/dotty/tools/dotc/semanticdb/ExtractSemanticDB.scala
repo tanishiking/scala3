@@ -248,6 +248,11 @@ class ExtractSemanticDB extends Phase:
                     registerUseGuarded(None, alt.symbol.companionClass, sel.imported.span, tree.source)
         case tree: Inlined =>
           traverse(tree.call)
+        case tree: TypeApply =>
+          synth.tryFindSynthetic(tree).foreach { synth =>
+            synthetics += synth
+          }
+          traverseChildren(tree)
         case _ =>
           traverseChildren(tree)
 

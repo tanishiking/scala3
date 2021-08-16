@@ -19,6 +19,32 @@ class SyntheticsExtractor:
       tree match
         case tree: Apply if isForSynthetic(tree) =>
           None // not yet supported (for synthetics)
+        case tree: TypeApply =>
+          println(tree)
+          println(tree.args.foreach(arg => println(arg.symbol.flagsString)))
+          // println("===")
+          // println(tree)
+          // println(tree.symbol.flagsString)
+          // println(tree.fun.symbol.flagsString)
+          // tree.args.foreach(targ => println(targ.symbol.flagsString))
+          val fnTree = tree.fun match
+            // Something like `List.apply[Int](1,2,3)`
+            case select @ Select(qual, _) if isSyntheticName(select) =>
+              s.SelectTree(
+                s.OriginalTree(range(qual.span, tree.source)),
+                Some(select.toSemanticId)
+              )
+            case _ =>
+              s.OriginalTree(
+                range(tree.fun.span, tree.source)
+              )
+          val targs = tree.args.map(targ => targ.tpe.toSemanticType(targ.symbol)(using LinkMode.SymlinkChildren))
+          s.Synthetic(
+            range(tree.span, tree.source),
+            s.TypeApplyTree(
+              fnTree, targs
+            )
+          ).toOpt
         case tree: Apply
           if tree.args.nonEmpty &&
             tree.args.forall(arg =>
@@ -53,7 +79,6 @@ class SyntheticsExtractor:
           ).toOpt
         case _ => None
     else None
-
   private given TreeOps: AnyRef with
     extension (tree: Tree)
       def toSemanticTree(using Context, SemanticSymbolBuilder, TypeOps): s.Tree =
@@ -86,6 +111,16 @@ class SyntheticsExtractor:
         s.OriginalTree(range(tree.span, tree.source))
   end TreeOps
 
+  private def isSyntheticName(select: Select): Boolean =
+    select.span.toSynthetic == select.qualifier.span.toSynthetic && (
+      select.name == nme.apply ||
+      select.name == nme.update ||
+      select.name == nme.foreach ||
+      select.name == nme.withFilter ||
+      select.name == nme.flatMap ||
+      select.name == nme.map ||
+      select.name == nme.unapplySeq ||
+      select.name == nme.unapply)
 
   private def isForSynthetic(tree: Tree): Boolean =
     def isForComprehensionSyntheticName(select: Select): Boolean =
