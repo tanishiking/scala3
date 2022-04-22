@@ -1736,6 +1736,34 @@ Occurrences:
 [3:25..3:28): Int -> scala/Int#
 [3:30..3:33): Int -> scala/Int#
 
+expect/Infix.scala
+------------------
+
+Summary:
+Schema => SemanticDB v4
+Uri => Infix.scala
+Text => empty
+Language => Scala
+Symbols => 5 entries
+Occurrences => 8 entries
+
+Symbols:
+_empty_/SymbolTest# => trait SymbolTest extends Object { self: SymbolTest => +3 decls }
+_empty_/SymbolTest#`<init>`(). => primary ctor <init> (): SymbolTest
+_empty_/SymbolTest#arg(). => method arg => Int
+_empty_/SymbolTest#shouldBe(). => abstract method shouldBe (param right: Any): Unit
+_empty_/SymbolTest#shouldBe().(right) => param right: Any
+
+Occurrences:
+[0:6..0:16): SymbolTest <- _empty_/SymbolTest#
+[1:6..1:14): shouldBe <- _empty_/SymbolTest#shouldBe().
+[1:15..1:20): right <- _empty_/SymbolTest#shouldBe().(right)
+[1:22..1:25): Any -> scala/Any#
+[1:28..1:32): Unit -> scala/Unit#
+[2:6..2:9): arg <- _empty_/SymbolTest#arg().
+[3:7..3:15): shouldBe -> _empty_/SymbolTest#shouldBe().
+[3:17..3:20): arg -> _empty_/SymbolTest#arg().
+
 expect/InstrumentTyper.scala
 ----------------------------
 

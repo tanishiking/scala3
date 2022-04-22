@@ -1,0 +1,2 @@
+- Add `Infix.scala` in `tests/semanticdb/expect/Infix.scala`
+- Run `scala3-compiler-bootstrapped / Test / runMain dotty.tools.dotc.semanticdb.updateExpect`
