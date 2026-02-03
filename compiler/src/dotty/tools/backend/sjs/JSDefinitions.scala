@@ -231,6 +231,62 @@ final class JSDefinitions()(using Context) {
   @threadUnsafe lazy val LinkTimePropertyAnnotType: TypeRef = requiredClassRef("scala.scalajs.annotation.linkTimeProperty")
   def LinkTimePropertyAnnot(using Context) = LinkTimePropertyAnnotType.symbol.asClass
 
+  // Wasm Component Model (WIT) annotations and symbols
+  @threadUnsafe lazy val ScalaJSWitPackageVal = requiredPackage("scala.scalajs.wit")
+  @threadUnsafe lazy val ScalaJSWitPackageClass = ScalaJSWitPackageVal.moduleClass.asClass
+    @threadUnsafe lazy val WitPackage_nativeR = ScalaJSWitPackageClass.requiredMethodRef("native")
+    def WitPackage_native(using Context) = WitPackage_nativeR.symbol
+
+  // WIT Import/Export annotations
+  @threadUnsafe lazy val WitImportAnnotType: TypeRef = requiredClassRef("scala.scalajs.wit.annotation.WitImport")
+  def WitImportAnnot(using Context) = WitImportAnnotType.symbol.asClass
+  @threadUnsafe lazy val WitExportAnnotType: TypeRef = requiredClassRef("scala.scalajs.wit.annotation.WitExport")
+  def WitExportAnnot(using Context) = WitExportAnnotType.symbol.asClass
+
+  // WIT type annotations
+  @threadUnsafe lazy val WitRecordAnnotType: TypeRef = requiredClassRef("scala.scalajs.wit.annotation.WitRecord")
+  def WitRecordAnnot(using Context) = WitRecordAnnotType.symbol.asClass
+  @threadUnsafe lazy val WitVariantAnnotType: TypeRef = requiredClassRef("scala.scalajs.wit.annotation.WitVariant")
+  def WitVariantAnnot(using Context) = WitVariantAnnotType.symbol.asClass
+  @threadUnsafe lazy val WitFlagsAnnotType: TypeRef = requiredClassRef("scala.scalajs.wit.annotation.WitFlags")
+  def WitFlagsAnnot(using Context) = WitFlagsAnnotType.symbol.asClass
+
+  // WIT resource annotations
+  @threadUnsafe lazy val WitResourceImportAnnotType: TypeRef = requiredClassRef("scala.scalajs.wit.annotation.WitResourceImport")
+  def WitResourceImportAnnot(using Context) = WitResourceImportAnnotType.symbol.asClass
+  @threadUnsafe lazy val WitResourceMethodAnnotType: TypeRef = requiredClassRef("scala.scalajs.wit.annotation.WitResourceMethod")
+  def WitResourceMethodAnnot(using Context) = WitResourceMethodAnnotType.symbol.asClass
+  @threadUnsafe lazy val WitResourceStaticMethodAnnotType: TypeRef = requiredClassRef("scala.scalajs.wit.annotation.WitResourceStaticMethod")
+  def WitResourceStaticMethodAnnot(using Context) = WitResourceStaticMethodAnnotType.symbol.asClass
+  @threadUnsafe lazy val WitResourceConstructorAnnotType: TypeRef = requiredClassRef("scala.scalajs.wit.annotation.WitResourceConstructor")
+  def WitResourceConstructorAnnot(using Context) = WitResourceConstructorAnnotType.symbol.asClass
+  @threadUnsafe lazy val WitResourceDropAnnotType: TypeRef = requiredClassRef("scala.scalajs.wit.annotation.WitResourceDrop")
+  def WitResourceDropAnnot(using Context) = WitResourceDropAnnotType.symbol.asClass
+
+  // WIT implementation/export interface annotations
+  @threadUnsafe lazy val WitImplementationAnnotType: TypeRef = requiredClassRef("scala.scalajs.wit.annotation.WitImplementation")
+  def WitImplementationAnnot(using Context) = WitImplementationAnnotType.symbol.asClass
+  @threadUnsafe lazy val WitExportInterfaceAnnotType: TypeRef = requiredClassRef("scala.scalajs.wit.annotation.WitExportInterface")
+  def WitExportInterfaceAnnot(using Context) = WitExportInterfaceAnnotType.symbol.asClass
+
+  // WIT Result classes
+  @threadUnsafe lazy val ComponentResultType: TypeRef = requiredClassRef("scala.scalajs.wit.Result")
+  def ComponentResultClass(using Context) = ComponentResultType.symbol.asClass
+  @threadUnsafe lazy val ComponentResultOkType: TypeRef = requiredClassRef("scala.scalajs.wit.Ok")
+  def ComponentResultOkClass(using Context) = ComponentResultOkType.symbol.asClass
+  @threadUnsafe lazy val ComponentResultErrType: TypeRef = requiredClassRef("scala.scalajs.wit.Err")
+  def ComponentResultErrClass(using Context) = ComponentResultErrType.symbol.asClass
+
+  // WIT unsigned types
+  @threadUnsafe lazy val WitUnsigned_UByteType: TypeRef = requiredClassRef("scala.scalajs.wit.unsigned.UByte")
+  def WitUnsigned_UByte(using Context) = WitUnsigned_UByteType.symbol
+  @threadUnsafe lazy val WitUnsigned_UShortType: TypeRef = requiredClassRef("scala.scalajs.wit.unsigned.UShort")
+  def WitUnsigned_UShort(using Context) = WitUnsigned_UShortType.symbol
+  @threadUnsafe lazy val WitUnsigned_UIntType: TypeRef = requiredClassRef("scala.scalajs.wit.unsigned.UInt")
+  def WitUnsigned_UInt(using Context) = WitUnsigned_UIntType.symbol
+  @threadUnsafe lazy val WitUnsigned_ULongType: TypeRef = requiredClassRef("scala.scalajs.wit.unsigned.ULong")
+  def WitUnsigned_ULong(using Context) = WitUnsigned_ULongType.symbol
+
   @threadUnsafe lazy val ScalaRunTime_isArrayR = defn.ScalaRuntimeModule.requiredMethodRef("isArray", List(???, ???))
   def ScalaRunTime_isArray(using Context): Symbol = ScalaRunTime_isArrayR.symbol
 

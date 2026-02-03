@@ -546,7 +546,7 @@ object ScalaLibraryPlugin extends AutoPlugin {
     val cache  = stream.cacheDirectory
     val retrieveDir = cache / "scalajs-scalalib" / scalaVersion.value
 
-    val scalalibArtifact = "org.scala-js" % "scalajs-scalalib_2.13" % s"$scala2Version+$scalaJSVersion"
+    val scalalibArtifact = "io.github.scala-wasm" % "scalajs-scalalib_2.13" % s"2.13.17+$scalaJSVersion"
     lm.retrieve(scalalibArtifact, scalaModuleInfo = None, retrieveDir, log)
         .fold(w => throw w.resolveException, identity)
         .filterNot(_.getPath().contains("javalib"))

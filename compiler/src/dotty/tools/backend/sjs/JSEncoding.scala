@@ -329,6 +329,9 @@ object JSEncoding {
 
       case typeRef: jstpe.TransientTypeRef =>
         throw AssertionError(s"Unexpected transient type ref $typeRef for ${typeRefInternal._2}")
+
+      case typeRef: jstpe.WitResourceTypeRef =>
+        jstpe.WitResourceType(typeRef.className)
     }
   }
 
@@ -350,6 +353,8 @@ object JSEncoding {
         else if (sym == defn.FloatClass) jstpe.FloatRef
         else if (sym == defn.DoubleClass) jstpe.DoubleRef
         else throw new Exception(s"unknown primitive value class $sym")
+      } else if (sym.isWitResourceType) {
+        jstpe.WitResourceTypeRef(encodeClassName(sym))
       } else {
         encodeClassRef(sym)
       }
@@ -426,4 +431,14 @@ object JSEncoding {
     if (originalName == name.mangledString) NoOriginalName
     else OriginalName(originalName)
   }
+
+  // WIT (Wasm Component Model) type encoding methods
+
+  /** Encodes a WIT resource type reference for use in type signatures. */
+  def encodeWitResourceTypeRef(sym: Symbol)(using Context): jstpe.WitResourceTypeRef =
+    jstpe.WitResourceTypeRef(encodeClassName(sym))
+
+  /** Encodes a WIT resource type. */
+  def encodeWitResourceType(sym: Symbol)(using Context): jstpe.WitResourceType =
+    jstpe.WitResourceType(encodeClassName(sym))
 }

@@ -6,7 +6,8 @@
 libraryDependencySchemes +=
   "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
 
-addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.20.2")
+resolvers += "Sonatype Central Snapshots" at "https://central.sonatype.com/repository/maven-snapshots/"
+addSbtPlugin("io.github.scala-wasm" % "sbt-scalajs" % "1.21.0-wasm.2-SNAPSHOT")
 
 addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.2.1")
 

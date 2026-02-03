@@ -46,6 +46,7 @@ val `scala3-presentation-compiler` = Build.`scala3-presentation-compiler`
 val `scala3-presentation-compiler-testcases` = Build.`scala3-presentation-compiler-testcases`
 
 val sjsSandbox = Build.sjsSandbox
+val sjsWasmSandbox = Build.sjsWasmSandbox
 val sjsJUnitTests = Build.sjsJUnitTests
 val sjsCompilerTests = Build.sjsCompilerTests
 

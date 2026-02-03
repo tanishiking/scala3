@@ -235,6 +235,54 @@ object JSSymUtils {
           || sym.hasAnnotation(jsdefn.JSExportStaticAnnot)
       )
     end sjsNeedsField
+
+    // WIT (Wasm Component Model) related extensions
+
+    /** Is this symbol a WIT resource type (annotated with @WitResourceImport)? */
+    def isWitResourceType(using Context): Boolean =
+      sym.hasAnnotation(jsdefn.WitResourceImportAnnot)
+
+    /** Is this symbol a WIT record class (annotated with @WitRecord and final)? */
+    def isWitRecordClass(using Context): Boolean =
+      sym.hasAnnotation(jsdefn.WitRecordAnnot) && sym.is(Final)
+
+    /** Is this symbol a WIT variant trait (annotated with @WitVariant and sealed)? */
+    def isWitVariantTrait(using Context): Boolean =
+      sym.hasAnnotation(jsdefn.WitVariantAnnot) && sym.is(Sealed)
+
+    /** Is this symbol annotated with @WitFlags? */
+    def isWitFlags(using Context): Boolean =
+      sym.hasAnnotation(jsdefn.WitFlagsAnnot)
+
+    /** Does this symbol have @WitImport annotation? */
+    def hasWitImport(using Context): Boolean =
+      sym.hasAnnotation(jsdefn.WitImportAnnot)
+
+    /** Does this symbol have @WitExport annotation? */
+    def hasWitExport(using Context): Boolean =
+      sym.hasAnnotation(jsdefn.WitExportAnnot)
+
+    /** Is this a WIT resource static method?
+     *  Must be annotated with @WitResourceStaticMethod and be in a companion object
+     *  of a @WitResourceImport annotated trait.
+     */
+    def isWitResourceStaticMethod(using Context): Boolean =
+      sym.hasAnnotation(jsdefn.WitResourceStaticMethodAnnot) &&
+      sym.owner.is(ModuleClass) &&
+      sym.owner.companionClass.hasAnnotation(jsdefn.WitResourceImportAnnot)
+
+    /** Is this a WIT resource constructor?
+     *  Must be annotated with @WitResourceConstructor and be in a companion object
+     *  of a @WitResourceImport annotated trait.
+     */
+    def isWitResourceConstructor(using Context): Boolean =
+      sym.hasAnnotation(jsdefn.WitResourceConstructorAnnot) &&
+      sym.owner.is(ModuleClass) &&
+      sym.owner.companionClass.hasAnnotation(jsdefn.WitResourceImportAnnot)
+
+    /** Is this a WIT component tuple class (scala.scalajs.wit.Tuple*)? */
+    def isWitComponentTupleClass(using Context): Boolean =
+      sym.fullName.toString.startsWith("scala.scalajs.wit.Tuple")
   }
 
   /** Extractor for a `TermName` that *may* be a JS unary operator.

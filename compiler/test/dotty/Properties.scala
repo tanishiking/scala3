@@ -101,4 +101,5 @@ object Properties {
 
   /** scalajs-library jar */
   def scalaJSLibrary: String = sys.props("dotty.tests.classes.scalaJSLibrary")
+
 }

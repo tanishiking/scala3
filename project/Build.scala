@@ -52,6 +52,11 @@ import sbt.dsl.LinterLevel.Ignore
 object Build {
   import ScaladocConfigs._
 
+  /** Version of the scala-wasm scalajs-ir library with WIT support.
+   *  This version includes WasmInterfaceTypes, WitFunctionApply, WitNativeMemberDef, etc.
+   */
+  val scalaWasmIRVersion = "1.21.0-wasm.2-SNAPSHOT"
+
   /** Version of the Scala compiler used to build the artifacts.
    *  Reference version should track the latest version pushed to Maven:
    *  - In main branch it should be the last RC version
@@ -79,7 +84,7 @@ object Build {
    *  During release candidate cycle incremented by the release officer before publishing a subsequent RC version;
    *  During final, stable release is set exactly to `developedVersion`.
   */
-  val baseVersion = s"$developedVersion-RC1"
+  val baseVersion = s"$developedVersion-RC1-wasm"
 
   /** The version of TASTY that should be emitted, checked in runtime test
    *  For defails on how TASTY version should be set see related discussions:
@@ -152,7 +157,7 @@ object Build {
   }
 
   val homepageUrl = "https://scala-lang.org/"
-  val dottyOrganization = "org.scala-lang"
+  val dottyOrganization = "io.github.scala-wasm"
   val dottyGithubUrl = "https://github.com/scala/scala3"
   val dottyGithubRawUserContentUrl = "https://raw.githubusercontent.com/scala/scala3"
 
@@ -175,6 +180,7 @@ object Build {
 
   // Settings shared by the build (scoped in ThisBuild). Used in build.sbt
   lazy val thisBuildSettings = Def.settings(
+    resolvers += "Sonatype Central Snapshots" at "https://central.sonatype.com/repository/maven-snapshots/",
     organization := dottyOrganization,
     organizationName := "LAMP/EPFL",
     organizationHomepage := Some(url("http://lamp.epfl.ch")),
@@ -642,6 +648,15 @@ object Build {
         case _ => lines
       }
     recur(lines)
+  }
+
+  /** Replace package declarations and imports in Scala source file lines */
+  def replacePackageAndImports(lines: List[String])(replace: PartialFunction[String, String]): List[String] = {
+    val linesWithPackage = replacePackage(lines)(replace)
+    // Also replace imports: org.scalajs.ir -> dotty.tools.sjs.ir
+    linesWithPackage.map { line =>
+      line.replace("org.scalajs.ir", "dotty.tools.sjs.ir")
+    }
   }
 
   /** Insert UnsafeNulls Import after package */
@@ -1296,7 +1311,7 @@ object Build {
     .settings(publishSettings)
     .settings(
       name          := "scala-library-sjs",
-      organization  := "org.scala-js",
+      organization  := "io.github.scala-wasm",
       // This is very tricky here since this is a Scala 3 project, but to be able to smoothly
       // migrate the ecosystem, we need to be able to evict the Scala 2 library from the classpath.
       // The problem is that the Scala 2 library for Scala.js has a _2.13 in the module's name, so we need
@@ -1358,8 +1373,9 @@ object Build {
           || file._2.endsWith("UnitOps.tasty")         || file._2.endsWith("UnitOps.class") || file._2.endsWith("UnitOps$.class")
           || file._2.endsWith("AnonFunctionXXL.tasty") || file._2.endsWith("AnonFunctionXXL.class"))
       },
-      libraryDependencies += ("org.scala-js" %% "scalajs-library" % scalaJSVersion % Provided).cross(CrossVersion.for3Use2_13),
-      libraryDependencies += ("org.scala-js" % "scalajs-javalib" % scalaJSVersion),
+      resolvers += "Sonatype Central Snapshots" at "https://central.sonatype.com/repository/maven-snapshots/",
+      libraryDependencies += ("io.github.scala-wasm" %% "scalajs-library" % scalaWasmIRVersion % Provided).cross(CrossVersion.for3Use2_13),
+      libraryDependencies += ("io.github.scala-wasm" % "scalajs-javalib" % scalaWasmIRVersion),
       // Project specific target folder. sbt doesn't like having two projects using the same target folder
       target := target.value / "scala-library",
       autoScalaLibrary := false,
@@ -1567,10 +1583,11 @@ object Build {
        * of scalajs-ir built with a different Scala compiler, we add its
        * sources instead of depending on the binaries.
        */
+      resolvers += "Sonatype Central Snapshots" at "https://central.sonatype.com/repository/maven-snapshots/",
       ivyConfigurations += SourceDeps.hide,
       transitiveClassifiers := Seq("sources"),
       libraryDependencies +=
-        ("org.scala-js" %% "scalajs-ir" % scalaJSVersion % "sourcedeps").cross(CrossVersion.for3Use2_13),
+        ("io.github.scala-wasm" %% "scalajs-ir" % scalaWasmIRVersion % "sourcedeps").cross(CrossVersion.for3Use2_13),
       Compile / sourceGenerators += Def.task {
         val s = streams.value
         val cacheDir = s.cacheDirectory
@@ -1595,7 +1612,7 @@ object Build {
           val sjsSources = (trgDir ** "*.scala").get.toSet
           sjsSources.foreach(f => {
             val lines = IO.readLines(f)
-            val linesWithPackage = replacePackage(lines) {
+            val linesWithPackage = replacePackageAndImports(lines) {
               case "org.scalajs.ir" => "dotty.tools.sjs.ir"
             }
             IO.writeLines(f, insertUnsafeNullsImport(linesWithPackage))
@@ -1685,10 +1702,11 @@ object Build {
        * of scalajs-ir built with a different Scala compiler, we add its
        * sources instead of depending on the binaries.
        */
+      resolvers += "Sonatype Central Snapshots" at "https://central.sonatype.com/repository/maven-snapshots/",
       ivyConfigurations += SourceDeps.hide,
       transitiveClassifiers := Seq("sources"),
       libraryDependencies +=
-        ("org.scala-js" %% "scalajs-ir" % scalaJSVersion % "sourcedeps").cross(CrossVersion.for3Use2_13),
+        ("io.github.scala-wasm" %% "scalajs-ir" % scalaWasmIRVersion % "sourcedeps").cross(CrossVersion.for3Use2_13),
       Compile / sourceGenerators += Def.task {
         val s = streams.value
         val cacheDir = s.cacheDirectory
@@ -1713,7 +1731,7 @@ object Build {
           val sjsSources = (trgDir ** "*.scala").get.toSet
           sjsSources.foreach(f => {
             val lines = IO.readLines(f)
-            val linesWithPackage = replacePackage(lines) {
+            val linesWithPackage = replacePackageAndImports(lines) {
               case "org.scalajs.ir" => "dotty.tools.sjs.ir"
             }
             IO.writeLines(f, insertUnsafeNullsImport(linesWithPackage))
@@ -2181,6 +2199,32 @@ object Build {
       bspEnabled := false,
     )
 
+  lazy val sjsWasmSandbox = project.in(file("sandbox/scalajs-wasm")).
+    enablePlugins(DottyJSPlugin).
+    dependsOn(`scala-library-sjs`).
+    settings(
+      regularScalaJSProjectSettings,
+      Test / fork := false,
+      scalaJSUseMainModuleInitializer := false,
+      scalaJSWitDirectory := baseDirectory.value / "wit",
+      scalaJSWitPackage := Some("hellowasm"),
+      scalaJSLinkerConfig := {
+        val witDir = scalaJSWitDirectory.value
+        val witWorld = scalaJSWitWorld.value
+        scalaJSLinkerConfig.value
+          .withExperimentalUseWebAssembly(true)
+          .withModuleKind(ModuleKind.ESModule)
+          .withWasmFeatures { prevFeatures =>
+            prevFeatures
+              .withTargetPureWasm(true)
+              .withComponentModel(true)
+              .withWitDirectory(Some(witDir.getAbsolutePath))
+              .withWitWorld(witWorld)
+          }
+      },
+      bspEnabled := false,
+    )
+
   /** Scala.js test suite.
    *
    *  This project downloads the sources of the upstream Scala.js test suite,
@@ -2230,7 +2274,7 @@ object Build {
 
       // We need JUnit in the Compile configuration
       libraryDependencies +=
-        ("org.scala-js" %% "scalajs-junit-test-runtime" % scalaJSVersion).cross(CrossVersion.for3Use2_13),
+        ("io.github.scala-wasm" %% "scalajs-junit-test-runtime" % scalaJSVersion).cross(CrossVersion.for3Use2_13),
 
       (Compile / sourceGenerators) += Def.task {
         import org.scalajs.linker.interface.CheckedBehavior
@@ -2392,9 +2436,10 @@ object Build {
       (Compile / resourceDirectory)    := baseDirectory.value / "resources",
       (Test / resourceDirectory)       := baseDirectory.value / "test-resources",
       scalaVersion := (`scala3-compiler-bootstrapped` / scalaVersion).value,
+      resolvers += "Sonatype Central Snapshots" at "https://central.sonatype.com/repository/maven-snapshots/",
       libraryDependencies ++= Seq(
-        "org.scala-js" %% "scalajs-linker" % scalaJSVersion % Test cross CrossVersion.for3Use2_13,
-        "org.scala-js" %% "scalajs-env-nodejs" % "1.3.0" % Test cross CrossVersion.for3Use2_13,
+        "io.github.scala-wasm" %% "scalajs-linker" % scalaWasmIRVersion % Test cross CrossVersion.for3Use2_13,
+        "org.scala-js" %% "scalajs-env-nodejs" % "1.4.0" % Test cross CrossVersion.for3Use2_13,
       ),
 
       // Change the baseDirectory when running the tests

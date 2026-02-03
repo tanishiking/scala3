@@ -62,6 +62,7 @@ class JSCodeGen()(using genCtx: Context) {
   val sjsPlatform = dotty.tools.dotc.config.SJSPlatform.sjsPlatform
   val jsdefn = JSDefinitions.jsdefn
   private val primitives = new JSPrimitives(genCtx)
+  private val witCodeGen = new WitCodeGen(this)
 
   val positionConversions = new JSPositions()(using genCtx)
   import positionConversions.*
@@ -271,7 +272,12 @@ class JSCodeGen()(using genCtx: Context) {
             delambdafyTargetDefDefs := MutableSymbolMap(),
             methodsAllowingJSAwait := mutable.Set.empty,
         ) {
-          val tree = if (sym.isJSType) {
+          val tree = if (sym.hasAnnotation(jsdefn.WitResourceImportAnnot)) {
+            // WIT resource class (trait annotated with @WitResourceImport)
+            withNewLocalNameScope {
+              witCodeGen.genWasmComponentResourceClassData(td)
+            }
+          } else if (sym.isJSType) {
             if (!sym.is(Trait) && sym.isNonNativeJSClass)
               genNonNativeJSClass(td)
             else
@@ -438,6 +444,9 @@ class JSCodeGen()(using genCtx: Context) {
 
     val methodsBuilder = List.newBuilder[js.MethodDef]
     val jsNativeMembersBuilder = List.newBuilder[js.JSNativeMemberDef]
+    val witNativeMembersBuilder = List.newBuilder[js.WitNativeMemberDef]
+    val witExportDefsBuilder = List.newBuilder[js.WitExportDef]
+    val witExportMethods = mutable.Map.empty[Symbol, DefDef] // Methods to export via WIT
 
     for (tree <- collectValOrDefDefs(td.rhs.asInstanceOf[Template])) {
       tree match {
@@ -452,6 +461,26 @@ class JSCodeGen()(using genCtx: Context) {
           if sym.hasAnnotation(jsdefn.JSNativeAnnot) then
             if !sym.is(Accessor) then
               jsNativeMembersBuilder += genJSNativeMemberDef(dd)
+          else if sym.hasAnnotation(jsdefn.WitImportAnnot) then
+            // WIT import - generate WitNativeMemberDef
+            for {
+              annot <- sym.getAnnotation(jsdefn.WitImportAnnot)
+              moduleName <- annot.argumentConstantString(0)
+              functionName <- annot.argumentConstantString(1)
+            } {
+              val flags = js.MemberFlags.empty.withNamespace(js.MemberNamespace.PublicStatic)
+              val name = js.WitFunctionName.Function(functionName)
+              witNativeMembersBuilder += witCodeGen.genWitNativeMemberDef(flags, dd, moduleName, name)
+            }
+          else if sym.isWitResourceStaticMethod then
+            witCodeGen.genWitResourceStaticMethodDef(dd).foreach(witNativeMembersBuilder += _)
+          else if sym.isWitResourceConstructor then
+            witCodeGen.genWitResourceConstructor(dd).foreach(witNativeMembersBuilder += _)
+          else if sym.hasAnnotation(jsdefn.WitExportAnnot) ||
+              sym.allOverriddenSymbols.exists(_.hasAnnotation(jsdefn.WitExportAnnot)) then
+            // WIT export - record for later, after method generation
+            witExportMethods(sym) = dd
+            methodsBuilder ++= genMethod(dd) // Also generate the method itself
           else
             methodsBuilder ++= genMethod(dd)
       }
@@ -462,11 +491,33 @@ class JSCodeGen()(using genCtx: Context) {
     val jsNativeMembers = jsNativeMembersBuilder.result()
     val generatedMethods = methodsBuilder.result() ::: staticGetterDefs
 
+    // Generate WIT export definitions
+    for ((sym, dd) <- witExportMethods) {
+      val witExportAnnotOpt = sym.getAnnotation(jsdefn.WitExportAnnot)
+        .orElse(sym.allOverriddenSymbols.flatMap(_.getAnnotation(jsdefn.WitExportAnnot)).nextOption())
+      for {
+        annot <- witExportAnnotOpt
+        moduleName <- annot.argumentConstantString(0)
+        functionName <- annot.argumentConstantString(1)
+      } {
+        val funcType = witCodeGen.witFunctionTypeOf(sym)
+        val exportInfo = WitExportInfo(moduleName, functionName, funcType)(dd.sourcePos)
+
+        // Find the generated method def
+        val methodIdent = encodeMethodSym(sym)
+        generatedMethods.find(_.name.name == methodIdent.name).foreach { methodDef =>
+          witExportDefsBuilder += witCodeGen.genWitExportDef(exportInfo, methodDef)
+        }
+      }
+    }
+    val witNativeMembers = witNativeMembersBuilder.result()
+
     // Generate member exports
     val memberExports = jsExportsGen.genMemberExports(sym)
 
-    // Generate top-level export definitions
-    val topLevelExportDefs = jsExportsGen.genTopLevelExports(sym)
+    // Generate top-level export definitions (including WIT exports)
+    val jsTopLevelExportDefs = jsExportsGen.genTopLevelExports(sym)
+    val topLevelExportDefs = jsTopLevelExportDefs ::: witExportDefsBuilder.result()
 
     // Static initializer
     val optStaticInitializer = {
@@ -530,6 +581,7 @@ class JSCodeGen()(using genCtx: Context) {
                 jsConstructor = None,
                 jsMethodProps = Nil,
                 jsNativeMembers = Nil,
+                witNativeMembers = Nil,
                 topLevelExportDefs = Nil
             )(js.OptimizerHints.empty)
             generatedStaticForwarderClasses += sym -> forwardersClassDef
@@ -563,6 +615,7 @@ class JSCodeGen()(using genCtx: Context) {
         jsConstructor = None,
         memberExports,
         jsNativeMembers,
+        witNativeMembers,
         topLevelExportDefs)(
         optimizerHints)
 
@@ -691,6 +744,7 @@ class JSCodeGen()(using genCtx: Context) {
         Some(generatedConstructor),
         jsMethodProps,
         jsNativeMembers = Nil,
+        witNativeMembers = Nil,
         topLevelExports)(
         OptimizerHints.empty)
 
@@ -727,7 +781,8 @@ class JSCodeGen()(using genCtx: Context) {
         Nil,
         None,
         Nil,
-        Nil,
+        jsNativeMembers = Nil,
+        witNativeMembers = Nil,
         Nil)(
         OptimizerHints.empty)
   }
@@ -774,7 +829,8 @@ class JSCodeGen()(using genCtx: Context) {
         allMemberDefs,
         None,
         Nil,
-        Nil,
+        jsNativeMembers = Nil,
+        witNativeMembers = Nil,
         Nil)(
         OptimizerHints.empty)
 
@@ -1768,7 +1824,7 @@ class JSCodeGen()(using genCtx: Context) {
 
   /** Gen JS code for a tree in expression position (in the IR).
    */
-  private def genExpr(tree: Tree): js.Tree = {
+  private[sjs] def genExpr(tree: Tree): js.Tree = {
     val result = genStatOrExpr(tree, isStat = false)
     assert(result.tpe != jstpe.VoidType,
         s"genExpr($tree) returned a tree with type VoidType at pos ${tree.span}")
@@ -2459,7 +2515,8 @@ class JSCodeGen()(using genCtx: Context) {
           ClassKind.AbstractJSType, None, Some(parent), interfaces = Nil,
           jsSuperClass = None, jsNativeLoadSpec = None, fields = Nil,
           methods = originalClassDef.methods, jsConstructor = None,
-          jsMethodProps = Nil, jsNativeMembers = Nil, topLevelExportDefs = Nil)(
+          jsMethodProps = Nil, jsNativeMembers = Nil, witNativeMembers = Nil,
+          topLevelExportDefs = Nil)(
           originalClassDef.optimizerHints)
     }
 
@@ -3161,6 +3218,13 @@ class JSCodeGen()(using genCtx: Context) {
         genApplyJSClassMethod(genExpr(receiver), sym, genActualArgs(sym, args))
     } else if (sym.hasAnnotation(jsdefn.JSNativeAnnot)) {
       genJSNativeMemberCall(tree)
+    } else if (sym.hasAnnotation(jsdefn.WitResourceMethodAnnot) ||
+        sym.hasAnnotation(jsdefn.WitResourceDropAnnot)) {
+      // WIT resource instance methods and drop - pass receiver
+      witCodeGen.genWitNativeMemberCall(sym, tree, Some(receiver), isStat)(using this, implicitLocalNames)
+    } else if (witCodeGen.hasWitNativeAnnotation(sym)) {
+      // WIT imports, resource constructors, and static methods - no receiver
+      witCodeGen.genWitNativeMemberCall(sym, tree, None, isStat)(using this, implicitLocalNames)
     } else {
       genApplyMethodMaybeStatically(genExpr(receiver), sym, genActualArgs(sym, args))
     }
