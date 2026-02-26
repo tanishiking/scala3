@@ -4,17 +4,9 @@ syntax = "proto3";
 // We generate compiler-local model types under `dotty.tools.dotc.semanticdb`.
 package dotty.tools.dotc.semanticdb;
 
-import "scalapb/scalapb.proto";
-
-option (scalapb.options) = {
-  // Upstream default is false (appends `.semanticdb` to generated package).
-  // Keep generated classes directly in `dotty.tools.dotc.semanticdb`.
-  flat_package: true
-  // Upstream does not inject this import.
-  // Required so generated ScalaPB code compiles under explicit nulls.
-  import: "scala.language.unsafeNulls"
-  preserve_unknown_fields: false
-};
+option java_package = "dotty.tools.dotc.semanticdb.javalite";
+option java_multiple_files = true;
+option optimize_for = LITE_RUNTIME;
 
 enum Schema {
   LEGACY = 0;
@@ -281,7 +273,7 @@ message SymbolInformation {
     MESSAGE = 22;
     // IMPORTANT! Java enums are classes with *enum* property, see
     // https://scalameta.org/docs/semanticdb/specification.html#symbolinformation-2
-    PROTOBUF_ENUM = 23;
+    PROTOBUF_ENUM_KIND = 23;
     PROTOBUF_ENUM_VALUE = 24;
     SERVICE = 25;
     RPC = 26;

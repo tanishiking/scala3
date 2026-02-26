@@ -22,6 +22,7 @@ import org.junit.experimental.categories.Category
 import dotty.BootstrappedOnlyTests
 import dotty.tools.dotc.Main
 import dotty.tools.dotc.semanticdb.Scala3.given
+import dotty.tools.dotc.semanticdb.{javalite as jl}
 import dotty.tools.dotc.util.SourceFile
 
 @main def updateExpect =
@@ -47,7 +48,7 @@ import dotty.tools.dotc.util.SourceFile
   val metacSb: StringBuilder = StringBuilder(5000)
   val semanticdbPath = inputFile()
   val doc = Tools.loadTextDocumentUnsafe(sourceSrc.toAbsolutePath, semanticdbPath)
-  Tools.metac(doc, Paths.get(doc.uri))(using metacSb)
+  Tools.metac(doc, Paths.get(doc.getUri))(using metacSb)
   Files.write(rootSrc.resolve("metac.expect"), metacSb.toString.getBytes(StandardCharsets.UTF_8))
 
 
@@ -163,30 +164,30 @@ object SemanticdbTests:
    *   }
    * }}}
    **/
-  def printTextDocument(doc: TextDocument): String =
-    val symtab = doc.symbols.iterator.map(info => info.symbol -> info).toMap
+  def printTextDocument(doc: jl.TextDocument): String =
+    val symtab = doc.getSymbolsList.asScala.iterator.map(info => info.getSymbol -> info).toMap
     val sb = StringBuilder(1000)
-    val sourceFile = SourceFile.virtual(doc.uri, doc.text)
+    val sourceFile = SourceFile.virtual(doc.getUri, doc.getText)
     var offset = 0
-    for occ <- doc.occurrences.sorted do
-      val range = occ.range.get
+    for occ <- doc.getOccurrencesList.asScala.toList.sorted if occ.hasRange do
+      val range = occ.getRange
       val end = math.max(
         offset,
-        sourceFile.lineToOffset(range.endLine) + range.endCharacter
+        sourceFile.lineToOffset(range.getEndLine) + range.getEndCharacter
       )
       val isPrimaryConstructor =
-        symtab.get(occ.symbol).exists(_.isPrimary)
-      if !occ.symbol.isPackage && !isPrimaryConstructor then
-        assert(end <= doc.text.length,
-          s"doc is only ${doc.text.length} - offset=$offset, end=$end , symbol=${occ.symbol} in source ${sourceFile.name}")
-        sb.append(doc.text.substring(offset, end))
+        symtab.get(occ.getSymbol).exists(_.isPrimary)
+      if !occ.getSymbol.isPackage && !isPrimaryConstructor then
+        assert(end <= doc.getText.length,
+          s"doc is only ${doc.getText.length} - offset=$offset, end=$end , symbol=${occ.getSymbol} in source ${sourceFile.name}")
+        sb.append(doc.getText.substring(offset, end))
         sb.append("/*")
-          .append(if (occ.role.isDefinition) "<-" else "->")
-          .append(occ.symbol.replace("/", "::"))
+          .append(if occ.getRole == jl.SymbolOccurrence.Role.DEFINITION then "<-" else "->")
+          .append(occ.getSymbol.replace("/", "::"))
           .append("*/")
         offset = end
-    assert(offset <= doc.text.length, s"absurd offset = $offset when doc is length ${doc.text.length}")
-    sb.append(doc.text.substring(offset))
+    assert(offset <= doc.getText.length, s"absurd offset = $offset when doc is length ${doc.getText.length}")
+    sb.append(doc.getText.substring(offset))
     sb.toString
   end printTextDocument
 

@@ -12,20 +12,153 @@ import core.StdNames.tpnme
 
 import collection.mutable
 
-import dotty.tools.dotc.{semanticdb => s}
+import dotty.tools.dotc.semanticdb.{javalite as jl}
 import Scala3.{FakeSymbol, SemanticSymbol, WildcardTypeSymbol, TypeParamRefSymbol, TermParamRefSymbol, RefinementSymbol}
 import dotty.tools.dotc.core.Names.Designator
 import dotty.tools.dotc.util.chaining.*
+import scala.jdk.CollectionConverters.*
 
 class TypeOps:
   import SymbolScopeOps.*
   import Scala3.given
+  private val emptyType = jl.Type.getDefaultInstance
+
+  private def isTypeDefined(tpe: jl.Type): Boolean =
+    tpe.getSealedValueCase != jl.Type.SealedValueCase.SEALEDVALUE_NOT_SET
+
+  private def isConstantDefined(const: jl.Constant): Boolean =
+    const.getSealedValueCase != jl.Constant.SealedValueCase.SEALEDVALUE_NOT_SET
+
   private val paramRefSymtab = mutable.Map[(LambdaType, Name), Symbol]()
   private val refinementSymtab = mutable.Map[(RefinedType, Name), Symbol]()
 
   // save generated fake symbols so we can insert them into symbols section of SemanticDB
   val fakeSymbols = mutable.Set[FakeSymbol]()
   given typeOps: TypeOps = this
+
+  private def newScope(symlinks: Seq[String] = Seq.empty, hardlinks: Seq[jl.SymbolInformation] = Seq.empty): jl.Scope =
+    val b = jl.Scope.newBuilder()
+    if symlinks.nonEmpty then b.addAllSymlinks(symlinks.asJava)
+    if hardlinks.nonEmpty then b.addAllHardlinks(hardlinks.asJava)
+    b.build()
+
+  private def newAnnotation(tpe: jl.Type): jl.Annotation =
+    val b = jl.Annotation.newBuilder()
+    if isTypeDefined(tpe) then b.setTpe(tpe)
+    b.build()
+
+  private def newMethodSignature(typeParameters: Option[jl.Scope], parameterLists: Seq[jl.Scope], returnType: jl.Type): jl.Signature =
+    val b = jl.MethodSignature.newBuilder().addAllParameterLists(parameterLists.asJava)
+    typeParameters.foreach(b.setTypeParameters)
+    if isTypeDefined(returnType) then b.setReturnType(returnType)
+    jl.Signature.newBuilder().setMethodSignature(b.build()).build()
+
+  private def newClassSignature(
+    typeParameters: Option[jl.Scope],
+    parents: Seq[jl.Type],
+    self: jl.Type,
+    declarations: Option[jl.Scope],
+  ): jl.Signature =
+    val b = jl.ClassSignature.newBuilder().addAllParents(parents.asJava)
+    typeParameters.foreach(b.setTypeParameters)
+    if isTypeDefined(self) then b.setSelf(self)
+    declarations.foreach(b.setDeclarations)
+    jl.Signature.newBuilder().setClassSignature(b.build()).build()
+
+  private def newTypeSignature(typeParameters: Option[jl.Scope], lowerBound: jl.Type, upperBound: jl.Type): jl.Signature =
+    val b = jl.TypeSignature.newBuilder()
+    typeParameters.foreach(b.setTypeParameters)
+    if isTypeDefined(lowerBound) then b.setLowerBound(lowerBound)
+    if isTypeDefined(upperBound) then b.setUpperBound(upperBound)
+    jl.Signature.newBuilder().setTypeSignature(b.build()).build()
+
+  private def newValueSignature(tpe: jl.Type): jl.Signature =
+    val b = jl.ValueSignature.newBuilder()
+    if isTypeDefined(tpe) then b.setTpe(tpe)
+    jl.Signature.newBuilder().setValueSignature(b.build()).build()
+
+  private def newTypeRef(prefix: jl.Type, symbol: String, typeArguments: Seq[jl.Type]): jl.Type =
+    val b = jl.TypeRef.newBuilder().setSymbol(symbol)
+    if isTypeDefined(prefix) then b.setPrefix(prefix)
+    if typeArguments.nonEmpty then b.addAllTypeArguments(typeArguments.asJava)
+    jl.Type.newBuilder().setTypeRef(b.build()).build()
+
+  private def newSingleType(prefix: jl.Type, symbol: String): jl.Type =
+    val b = jl.SingleType.newBuilder().setSymbol(symbol)
+    if isTypeDefined(prefix) then b.setPrefix(prefix)
+    jl.Type.newBuilder().setSingleType(b.build()).build()
+
+  private def newThisType(symbol: String): jl.Type =
+    jl.Type.newBuilder().setThisType(jl.ThisType.newBuilder().setSymbol(symbol).build()).build()
+
+  private def newSuperType(prefix: jl.Type, symbol: String): jl.Type =
+    val b = jl.SuperType.newBuilder().setSymbol(symbol)
+    if isTypeDefined(prefix) then b.setPrefix(prefix)
+    jl.Type.newBuilder().setSuperType(b.build()).build()
+
+  private def newConstantType(constant: jl.Constant): jl.Type =
+    val b = jl.ConstantType.newBuilder()
+    if isConstantDefined(constant) then b.setConstant(constant)
+    jl.Type.newBuilder().setConstantType(b.build()).build()
+
+  private def newMatchTypeCase(key: jl.Type = emptyType, body: jl.Type = emptyType): jl.MatchType.CaseType =
+    val b = jl.MatchType.CaseType.newBuilder()
+    if isTypeDefined(key) then b.setKey(key)
+    if isTypeDefined(body) then b.setBody(body)
+    b.build()
+
+  private def newMatchType(scrutinee: jl.Type, cases: Seq[jl.MatchType.CaseType]): jl.Type =
+    val b = jl.MatchType.newBuilder().addAllCases(cases.asJava)
+    if isTypeDefined(scrutinee) then b.setScrutinee(scrutinee)
+    jl.Type.newBuilder().setMatchType(b.build()).build()
+
+  private def newIntersectionType(types: Seq[jl.Type]): jl.Type =
+    jl.Type
+      .newBuilder()
+      .setIntersectionType(jl.IntersectionType.newBuilder().addAllTypes(types.asJava).build())
+      .build()
+
+  private def newStructuralType(tpe: jl.Type, declarations: Option[jl.Scope]): jl.Type =
+    val b = jl.StructuralType.newBuilder()
+    if isTypeDefined(tpe) then b.setTpe(tpe)
+    declarations.foreach(b.setDeclarations)
+    jl.Type.newBuilder().setStructuralType(b.build()).build()
+
+  private def newRepeatedType(tpe: jl.Type): jl.Type =
+    val b = jl.RepeatedType.newBuilder()
+    if isTypeDefined(tpe) then b.setTpe(tpe)
+    jl.Type.newBuilder().setRepeatedType(b.build()).build()
+
+  private def newAnnotatedType(annotations: Seq[jl.Annotation], tpe: jl.Type): jl.Type =
+    val b = jl.AnnotatedType.newBuilder()
+    if annotations.nonEmpty then b.addAllAnnotations(annotations.asJava)
+    if isTypeDefined(tpe) then b.setTpe(tpe)
+    jl.Type.newBuilder().setAnnotatedType(b.build()).build()
+
+  private def newExistentialType(tpe: jl.Type, declarations: Option[jl.Scope]): jl.Type =
+    val b = jl.ExistentialType.newBuilder()
+    if isTypeDefined(tpe) then b.setTpe(tpe)
+    declarations.foreach(b.setDeclarations)
+    jl.Type.newBuilder().setExistentialType(b.build()).build()
+
+  private def newUnionType(types: Seq[jl.Type]): jl.Type =
+    jl.Type
+      .newBuilder()
+      .setUnionType(jl.UnionType.newBuilder().addAllTypes(types.asJava).build())
+      .build()
+
+  private def newLambdaType(parameters: Option[jl.Scope], returnType: jl.Type): jl.Type =
+    val b = jl.LambdaType.newBuilder()
+    parameters.foreach(b.setParameters)
+    if isTypeDefined(returnType) then b.setReturnType(returnType)
+    jl.Type.newBuilder().setLambdaType(b.build()).build()
+
+  private def appendTypeArguments(base: jl.Type, extraTypeArguments: Seq[jl.Type]): jl.Type =
+    if base.getSealedValueCase == jl.Type.SealedValueCase.TYPE_REF then
+      val ref = base.getTypeRef
+      val merged = ref.toBuilder().clearTypeArguments().addAllTypeArguments((ref.getTypeArgumentsList.asScala.toList ++ extraTypeArguments).asJava).build()
+      jl.Type.newBuilder().setTypeRef(merged).build()
+    else base
 
   extension [T <: LambdaType | RefinedType](symtab: mutable.Map[(T, Name), Symbol])
     private def lookup(
@@ -83,7 +216,7 @@ class TypeOps:
       loop(tpe.dealias)
     }
 
-    def toSemanticSig(using LinkMode, Context, SemanticSymbolBuilder)(sym: Symbol): s.Signature =
+    def toSemanticSig(using LinkMode, Context, SemanticSymbolBuilder)(sym: Symbol): jl.Signature =
       def enterParamRef(tpe: Type): Unit =
         tpe match {
           case lam: LambdaType =>
@@ -177,7 +310,7 @@ class TypeOps:
         enterParamRef(sym.owner.info)
         enterRefined(sym.owner.info)
 
-      def loop(tpe: Type): s.Signature = tpe match {
+      def loop(tpe: Type): jl.Signature = tpe match {
         case mp: MethodOrPoly =>
           def flatten(
             t: Type,
@@ -205,18 +338,14 @@ class TypeOps:
 
           val sparamss = paramss.map(_.sscope)
           val stparams = tparams.sscopeOpt
-          s.MethodSignature(
-            stparams,
-            sparamss,
-            resType.toSemanticType(sym)
-          )
+          newMethodSignature(stparams, sparamss, resType.toSemanticType(sym))
 
         case cls: ClassInfo =>
           val stparams = cls.cls.typeParams.sscopeOpt
           val sparents = cls.parents.map(_.toSemanticType(sym))
           val sself = cls.selfType.toSemanticType(sym)
           val decls = cls.decls.toList.sscopeOpt
-          s.ClassSignature(stparams, sparents, sself, decls)
+          newClassSignature(stparams, sparents, sself, decls)
 
         case TypeBounds(lo, hi) =>
           // for `type X[T] = T` is equivalent to `[T] =>> T`
@@ -239,23 +368,23 @@ class TypeOps:
           val stparams = (loParams ++ hiParams).distinctBy(_.name).sscopeOpt
           val slo = loRes.toSemanticType(sym)
           val shi = hiRes.toSemanticType(sym)
-          s.TypeSignature(stparams, slo, shi)
+          newTypeSignature(stparams, slo, shi)
 
         case other =>
-          s.ValueSignature(
-            other.toSemanticType(sym)
-          )
+          newValueSignature(other.toSemanticType(sym))
       }
       loop(tpe)
 
-    def toSemanticType(sym: Symbol)(using LinkMode, SemanticSymbolBuilder, Context): s.Type =
+    def toSemanticType(sym: Symbol)(using LinkMode, SemanticSymbolBuilder, Context): jl.Type =
       import ConstantOps.*
-      def loop(tpe: Type): s.Type = tpe match {
+      def loop(tpe: Type): jl.Type = tpe match {
         case t if t.isFromJavaObject =>
           loop(defn.AnyType)
         case ExprType(tpe) =>
           val stpe = loop(tpe)
-          s.ByNameType(stpe)
+          val b = jl.ByNameType.newBuilder()
+          if isTypeDefined(stpe) then b.setTpe(stpe)
+          jl.Type.newBuilder().setByNameType(b.build()).build()
 
         // sym of `TypeRef(_, sym)` may not be a Symbol but Name in some cases
         // e.g. in MatchType,
@@ -263,38 +392,38 @@ class TypeOps:
         // x and xs should have a typebounds <: Any, >: Nothing
         // but Any (and Nothing) are represented as TypeRef(<scala>, "Any" <- Name)
         case tr @ TypeRef(pre, _) if tr.symbol != NoSymbol =>
-          val spre = if tpe.hasTrivialPrefix then s.Type.Empty else loop(pre)
+          val spre = if tpe.hasTrivialPrefix then emptyType else loop(pre)
           val ssym = tr.symbol.symbolName
-          s.TypeRef(spre, ssym, Seq.empty)
+          newTypeRef(spre, ssym, Seq.empty)
 
         // when TypeRef refers the refinement of RefinedType e.g.
         // TypeRef for `foo.B` in `trait T[A] { val foo: { type B = A } = ???; def bar(b: foo.B) = () }` has NoSymbol
         case TypeRef(pre, name: Name) =>
-          val spre = if tpe.hasTrivialPrefix then s.Type.Empty else loop(pre)
+          val spre = if tpe.hasTrivialPrefix then emptyType else loop(pre)
           val maybeSym = pre.widen.dealias.lookupSym(name)
           maybeSym match
             case Some(sym) =>
-              s.TypeRef(spre, sym.symbolName, Seq.empty)
-            case None => s.Type.Empty
+              newTypeRef(spre, sym.symbolName, Seq.empty)
+            case None => emptyType
 
         case tr @ TermRef(pre, _) if tr.symbol != NoSymbol =>
-          val spre = if(tpe.hasTrivialPrefix) s.Type.Empty else loop(pre)
+          val spre = if(tpe.hasTrivialPrefix) emptyType else loop(pre)
           val ssym = tr.symbol.symbolName
-          s.SingleType(spre, ssym)
+          newSingleType(spre, ssym)
 
         case TermRef(pre, name: Name) =>
-          val spre = if tpe.hasTrivialPrefix then s.Type.Empty else loop(pre)
+          val spre = if tpe.hasTrivialPrefix then emptyType else loop(pre)
           val maybeSym = pre.widen.dealias match
             case rt: RefinedType =>
               refinementSymtab.lookupOrErr(rt, name, rt.typeSymbol)
             case _ => None
           maybeSym match
             case Some(sym) =>
-              s.SingleType(spre, sym.symbolName)
-            case None => s.Type.Empty
+              newSingleType(spre, sym.symbolName)
+            case None => emptyType
 
         case ThisType(TypeRef(_, sym: Symbol)) =>
-          s.ThisType(sym.symbolName)
+          newThisType(sym.symbolName)
 
         case tref: TermParamRef =>
           paramRefSymtab.lookupOrErr(
@@ -302,9 +431,9 @@ class TypeOps:
           ) match
             case Some(ref) =>
               val ssym = ref.symbolName
-              s.SingleType(s.Type.Empty, ssym)
+              newSingleType(emptyType, ssym)
             case None =>
-              s.Type.Empty
+              emptyType
 
         case tref: TypeParamRef =>
           val tsym = paramRefSymtab.lookup(tref.binder, tref.paramName) match
@@ -320,21 +449,21 @@ class TypeOps:
           tsym match
             case Some(sym) =>
               val ssym = sym.symbolName
-              s.TypeRef(s.Type.Empty, ssym, Seq.empty)
+              newTypeRef(emptyType, ssym, Seq.empty)
             case None =>
-              s.Type.Empty
+              emptyType
 
         case SuperType(thistpe, supertpe) =>
           val spre = loop(thistpe.typeSymbol.info)
           val ssym = supertpe.typeSymbol.symbolName
-          s.SuperType(spre, ssym)
+          newSuperType(spre, ssym)
 
         // val clazzOf = classOf[...]
         case ConstantType(const) if const.tag == core.Constants.ClazzTag =>
           loop(const.typeValue)
 
         case ConstantType(const) =>
-          s.ConstantType(const.toSemanticConst)
+          newConstantType(const.toSemanticConst)
 
         case matchType: MatchType =>
           val scases = matchType.cases.map { caseType => caseType match {
@@ -345,21 +474,21 @@ class TypeOps:
               }.sscope
               lam.resType match {
                 case defn.MatchCase(key, body) =>
-                  s.MatchType.CaseType(
+                  newMatchTypeCase(
                     loop(key),
                     loop(body)
                   )
-                case _ => s.MatchType.CaseType() // shouldn't happen
+                case _ => newMatchTypeCase() // shouldn't happen
               }
             case defn.MatchCase(key, body) =>
               val skey = loop(key)
               val sbody = loop(body)
-              s.MatchType.CaseType(skey, sbody)
-            case _ => s.MatchType.CaseType() // shouldn't happen
+              newMatchTypeCase(skey, sbody)
+            case _ => newMatchTypeCase() // shouldn't happen
           }}
           val sscrutinee = loop(matchType.scrutinee)
           val sbound = loop(matchType.bound)
-          s.MatchType(sscrutinee, scases)
+          newMatchType(sscrutinee, scases)
 
         case rt @ RefinedType(parent, name, info) =>
           // `X { def x: Int; def y: Int }`
@@ -383,14 +512,14 @@ class TypeOps:
           // e.g. `X with Y with Z { refined }`
           // RefinedType(parent = AndType(X, AndType(Y, Z)), ...)
           // => List(X, Y, Z)
-          def flattenParent(parent: Type): List[s.Type] = parent match {
+          def flattenParent(parent: Type): List[jl.Type] = parent match {
             case AndType(tp1, tp2) =>
               flattenParent(tp1) ++ flattenParent(tp2)
             case _ => List(loop(parent))
           }
 
           val (parent, refinedInfos) = flatten(rt, List.empty)
-          val stpe = s.IntersectionType(flattenParent(parent))
+          val stpe = newIntersectionType(flattenParent(parent))
 
           val decls: List[SemanticSymbol] = refinedInfos.map { (name, info) =>
             refinementSymtab.lookup(rt, name).getOrElse {
@@ -398,7 +527,7 @@ class TypeOps:
             }
           }
           val sdecls = decls.sscopeOpt(using LinkMode.HardlinkChildren)
-          s.StructuralType(stpe, sdecls)
+          newStructuralType(stpe, sdecls)
 
         case rec: RecType =>
           loop(rec.parent) // should be handled as RefinedType
@@ -409,7 +538,7 @@ class TypeOps:
         case AnnotatedType(AppliedType(_, targs), annot)
           if annot.matches(defn.RepeatedAnnot) && (targs.length == 1) =>
           val stpe = loop(targs(0))
-          s.RepeatedType(stpe)
+          newRepeatedType(stpe)
 
         case ann: AnnotatedType if ann.annot.symbol.info.isInstanceOf[ClassInfo] =>
           def flatten(tpe: Type, annots: List[Annotation]): (Type, List[Annotation]) = tpe match
@@ -420,13 +549,13 @@ class TypeOps:
           val (parent, annots) = flatten(ann, List.empty)
           val sparent = loop(parent)
           val sannots = annots.map(a =>
-            s.Annotation(loop(a.symbol.info.asInstanceOf[ClassInfo].selfType))
+            newAnnotation(loop(a.symbol.info.asInstanceOf[ClassInfo].selfType))
           )
-          s.AnnotatedType(sannots, sparent)
+          newAnnotatedType(sannots, sparent)
 
         case AppliedType(tycon, args) if tycon == defn.RepeatedParamType && args.length == 1 =>
           val stpe = loop(args(0))
-          s.RepeatedType(stpe)
+          newRepeatedType(stpe)
 
         case app @ AppliedType(tycon, args) =>
           val targs = args.map { arg =>
@@ -445,7 +574,7 @@ class TypeOps:
                 // since it's not a symbol definition
                 // registerFakeSymbol(wildcardSym)
                 val ssym = wildcardSym.symbolName
-                (Some(wildcardSym), s.TypeRef(s.Type.Empty, ssym, Seq.empty))
+                (Some(wildcardSym), newTypeRef(emptyType, ssym, Seq.empty))
               case other =>
                 val sarg = loop(other)
                 (None, sarg)
@@ -453,39 +582,41 @@ class TypeOps:
           val wildcardSyms = targs.flatMap(_._1)
           val sargs = targs.map(_._2)
 
-          val applied = loop(tycon) match
-            case ref @ s.TypeRef(_, _, targs) =>
-              // For curried applied type `F[T][U]` and tycon is also an `AppliedType`
-              // Convert it to TypeRef(..., targs = List(T, U))
-              ref.copy(typeArguments = targs ++ sargs)
-            case _ =>
-              s.Type.Empty
+          val applied =
+            // For curried applied type `F[T][U]` and tycon is also an `AppliedType`
+            // convert it to a single type ref with merged type arguments.
+            val tyconType = loop(tycon)
+            if tyconType.getSealedValueCase == jl.Type.SealedValueCase.TYPE_REF then
+              appendTypeArguments(tyconType, sargs)
+            else
+              emptyType
 
           if (wildcardSyms.isEmpty) applied
-          else s.ExistentialType(
-            applied,
-            wildcardSyms.sscopeOpt(using LinkMode.HardlinkChildren)
-          )
+          else
+            newExistentialType(
+              applied,
+              wildcardSyms.sscopeOpt(using LinkMode.HardlinkChildren)
+            )
 
         case and: AndType =>
           def flatten(child: Type): List[Type] = child match
             case AndType(ct1, ct2) => flatten(ct1) ++ flatten(ct2)
             case other => List(other)
           val stpes = flatten(and).map(loop)
-          s.IntersectionType(stpes)
+          newIntersectionType(stpes)
 
         case or: OrType =>
           def flatten(child: Type): List[Type] = child match
             case OrType(ct1, ct2) => flatten(ct1) ++ flatten(ct2)
             case other => List(other)
           val stpes = flatten(or).map(loop)
-          s.UnionType(stpes)
+          newUnionType(stpes)
 
         case l: LazyRef =>
           loop(l.ref)
 
         case NoPrefix =>
-          s.Type.Empty
+          emptyType
 
         case lambda: HKTypeLambda =>
           val paramSyms: List[SemanticSymbol] = lambda.paramNames.zip(lambda.paramInfos).map { (paramName, bounds) =>
@@ -500,16 +631,13 @@ class TypeOps:
           val parameters =
             paramSyms.sscopeOpt(using LinkMode.HardlinkChildren)
           val resType = loop(lambda.resType)
-          s.LambdaType(
-            parameters,
-            resType
-          )
+          newLambdaType(parameters, resType)
 
         case tvar: TypeVar =>
           loop(tvar.stripped)
 
         case _ =>
-          s.Type.Empty
+          emptyType
       }
       loop(tpe)
 
@@ -533,12 +661,12 @@ class TypeOps:
 object SymbolScopeOps:
   import Scala3.{_, given}
   extension (syms: List[SemanticSymbol])
-    def sscope(using linkMode: LinkMode)(using SemanticSymbolBuilder, TypeOps, Context): s.Scope =
+    def sscope(using linkMode: LinkMode)(using SemanticSymbolBuilder, TypeOps, Context): jl.Scope =
       linkMode match
         case LinkMode.SymlinkChildren =>
-          s.Scope(symlinks = syms.map(_.symbolName))
+          jl.Scope.newBuilder().addAllSymlinks(syms.map(_.symbolName).asJava).build()
         case LinkMode.HardlinkChildren =>
-          s.Scope(hardlinks = syms.map(_.symbolInfo(Set.empty)))
+          jl.Scope.newBuilder().addAllHardlinks(syms.map(_.symbolInfo(Set.empty)).asJava).build()
 
-    def sscopeOpt(using LinkMode, SemanticSymbolBuilder, TypeOps, Context): Option[s.Scope] =
+    def sscopeOpt(using LinkMode, SemanticSymbolBuilder, TypeOps, Context): Option[jl.Scope] =
       if syms.nonEmpty then Some(syms.sscope) else None

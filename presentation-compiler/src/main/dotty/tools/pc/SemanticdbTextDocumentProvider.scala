@@ -4,14 +4,13 @@ import java.net.URI
 import java.nio.file.Path
 import java.nio.file.Paths
 
+import scala.jdk.CollectionConverters.*
 import scala.meta.internal.mtags.MD5
 import scala.util.Properties
 
 import dotty.tools.dotc.interactive.InteractiveDriver
 import dotty.tools.dotc.semanticdb.ExtractSemanticDB
-import dotty.tools.dotc.semanticdb.Language
-import dotty.tools.dotc.semanticdb.Schema
-import dotty.tools.dotc.semanticdb.TextDocument
+import dotty.tools.dotc.semanticdb.{javalite as jl}
 import dotty.tools.dotc.util.SourceFile
 
 class SemanticdbTextDocumentProvider(
@@ -42,15 +41,16 @@ class SemanticdbTextDocumentProvider(
       }
       .getOrElse(filePath.toString())
 
-    val document = TextDocument(
-      schema = Schema.SEMANTICDB4,
-      language = Language.SCALA,
-      uri = path.nn,
-      text = sourceCode,
-      md5 = MD5.compute(sourceCode),
-      symbols = extractor.symbolInfos.toList,
-      occurrences = extractor.occurrences.toList
-    )
+    val document = jl.TextDocument
+      .newBuilder()
+      .setSchema(jl.Schema.SEMANTICDB4)
+      .setLanguage(jl.Language.SCALA)
+      .setUri(path)
+      .setText(sourceCode)
+      .setMd5(MD5.compute(sourceCode))
+      .addAllSymbols(extractor.symbolInfos.toList.asJava)
+      .addAllOccurrences(extractor.occurrences.toList.asJava)
+      .build()
     document.toByteArray
 
 end SemanticdbTextDocumentProvider

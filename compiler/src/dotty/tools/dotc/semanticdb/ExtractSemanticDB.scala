@@ -26,7 +26,7 @@ import scala.PartialFunction.condOpt
 import typer.ImportInfo.withRootImports
 
 import dotty.tools.dotc.reporting.Diagnostic.Warning
-import dotty.tools.dotc.{semanticdb => s}
+import dotty.tools.dotc.semanticdb.{javalite as jl}
 import dotty.tools.io.{AbstractFile, JarArchive}
 import dotty.tools.dotc.semanticdb.DiagnosticOps.*
 import scala.util.{Using, Failure, Success}
@@ -65,7 +65,7 @@ class ExtractSemanticDB private (phaseMode: ExtractSemanticDB.PhaseMode) extends
   private def computeDiagnostics(
       sourceRoot: String,
       warnings: Map[SourceFile, List[dotty.tools.dotc.reporting.Diagnostic]],
-      append: ((Path, List[Diagnostic])) => Unit)(using Context): Boolean = monitor(phaseName) {
+      append: ((Path, List[jl.Diagnostic])) => Unit)(using Context): Boolean = monitor(phaseName) {
     val unit = ctx.compilationUnit
     warnings.get(unit.source).foreach { ws =>
       val outputDir =
@@ -106,7 +106,7 @@ class ExtractSemanticDB private (phaseMode: ExtractSemanticDB.PhaseMode) extends
     val unitContexts = units.map(ctx.fresh.setCompilationUnit(_).withRootImports)
     if (appendDiagnostics)
       val warningsAndInfos = (ctx.reporter.allWarnings ++ ctx.reporter.allInfos).groupBy(w => w.pos.source)
-      val buf = mutable.ListBuffer.empty[(Path, Seq[Diagnostic])]
+      val buf = mutable.ListBuffer.empty[(Path, Seq[jl.Diagnostic])]
       val units0 =
         for unitCtx <- unitContexts if computeDiagnostics(sourceRoot, warningsAndInfos, buf += _)(using unitCtx)
         yield unitCtx.compilationUnit
@@ -158,25 +158,26 @@ object ExtractSemanticDB:
 
   private def write(
     source: SourceFile,
-    occurrences: List[SymbolOccurrence],
-    symbolInfos: List[SymbolInformation],
-    synthetics: List[Synthetic],
+    occurrences: List[jl.SymbolOccurrence],
+    symbolInfos: List[jl.SymbolInformation],
+    synthetics: List[jl.Synthetic],
     outpath: Path,
     sourceRoot: String,
     semanticdbText: Boolean
   ): Unit =
     Files.createDirectories(outpath.getParent())
-    val doc: TextDocument = TextDocument(
-      schema = Schema.SEMANTICDB4,
-      language = Language.SCALA,
-      uri = Tools.mkURIstring(Paths.get(relPath(source, sourceRoot))),
-      text = if semanticdbText then String(source.content) else "",
-      md5 = MD5.compute(String(source.content)),
-      symbols = symbolInfos,
-      occurrences = occurrences,
-      synthetics = synthetics,
-    )
-    val docs = TextDocuments(List(doc))
+    val doc: jl.TextDocument = jl.TextDocument
+      .newBuilder()
+      .setSchema(jl.Schema.SEMANTICDB4)
+      .setLanguage(jl.Language.SCALA)
+      .setUri(Tools.mkURIstring(Paths.get(relPath(source, sourceRoot))))
+      .setText(if semanticdbText then String(source.content) else "")
+      .setMd5(MD5.compute(String(source.content)))
+      .addAllSymbols(symbolInfos.asJava)
+      .addAllOccurrences(occurrences.asJava)
+      .addAllSynthetics(synthetics.asJava)
+      .build()
+    val docs = jl.TextDocuments.newBuilder().addDocuments(doc).build()
     val out = Files.newOutputStream(outpath)
     try
       docs.writeTo(out)
@@ -186,15 +187,21 @@ object ExtractSemanticDB:
   end write
 
   private def appendDiagnostics(
-    diagnostics: Seq[Diagnostic],
+    diagnostics: Seq[jl.Diagnostic],
     outpath: Path
   ): Unit =
     Using.Manager { use =>
       val in = use(Files.newInputStream(outpath))
-      val docs = TextDocuments.parseFrom(in)
+      val docs = jl.TextDocuments.parseFrom(in)
 
       val out = use(Files.newOutputStream(outpath))
-      TextDocuments(docs.documents.map(_.withDiagnostics(diagnostics))).writeTo(out)
+      val updated = jl.TextDocuments.newBuilder()
+      docs.getDocumentsList.forEach { doc =>
+        updated.addDocuments(
+          doc.toBuilder().clearDiagnostics().addAllDiagnostics(diagnostics.asJava).build()
+        )
+      }
+      updated.build().writeTo(out)
       out.flush()
     } match
       case Failure(ex) => // failed somehow, should we say something?
@@ -214,26 +221,26 @@ object ExtractSemanticDB:
   /** Extractor of symbol occurrences from trees */
   class Extractor extends TreeTraverser:
     import Scala3.{_, given}
-    given s.SemanticSymbolBuilder = s.SemanticSymbolBuilder()
+    given SemanticSymbolBuilder = SemanticSymbolBuilder()
     val synth = SyntheticsExtractor()
-    given converter: s.TypeOps = s.TypeOps()
+    given converter: dotty.tools.dotc.semanticdb.TypeOps = dotty.tools.dotc.semanticdb.TypeOps()
 
     /** The bodies of synthetic locals */
     private val localBodies = mutable.HashMap[Symbol, Tree]()
 
     /** The extracted symbol occurrences */
-    val occurrences = new mutable.ListBuffer[SymbolOccurrence]()
+    val occurrences = new mutable.ListBuffer[jl.SymbolOccurrence]()
 
     /** The extracted symbol infos */
-    val symbolInfos = new mutable.ListBuffer[SymbolInformation]()
+    val symbolInfos = new mutable.ListBuffer[jl.SymbolInformation]()
 
-    val synthetics = new mutable.ListBuffer[s.Synthetic]()
+    val synthetics = new mutable.ListBuffer[jl.Synthetic]()
 
     /** A cache of localN names */
     val localNames = new mutable.HashSet[String]()
 
     /** The symbol occurrences generated so far, as a set */
-    private val generated = new mutable.HashSet[SymbolOccurrence]
+    private val generated = new mutable.HashSet[jl.SymbolOccurrence]
 
     def extract(tree: Tree)(using Context): Unit =
       traverse(tree)
@@ -544,9 +551,11 @@ object ExtractSemanticDB:
     private def registerSymbolSimple(sym: Symbol)(using Context): Unit =
       registerSymbol(sym, Set.empty)
 
-    private def registerOccurrence(symbol: String, span: Span, role: SymbolOccurrence.Role, treeSource: SourceFile)(using Context): Unit =
-      val occ = SymbolOccurrence(range(span, treeSource), symbol, role)
-      if !generated.contains(occ) && occ.symbol.nonEmpty then
+    private def registerOccurrence(symbol: String, span: Span, role: jl.SymbolOccurrence.Role, treeSource: SourceFile)(using Context): Unit =
+      val b = jl.SymbolOccurrence.newBuilder().setSymbol(symbol).setRole(role)
+      range(span, treeSource).foreach(r => b.setRange(r))
+      val occ = b.build()
+      if !generated.contains(occ) && occ.getSymbol.nonEmpty then
         occurrences += occ
         generated += occ
 
@@ -558,7 +567,7 @@ object ExtractSemanticDB:
       registerUse(sym.symbolName, span, treeSource)
 
     private def registerUse(symbol: String, span: Span, treeSource: SourceFile)(using Context): Unit =
-      registerOccurrence(symbol, span, SymbolOccurrence.Role.REFERENCE, treeSource)
+      registerOccurrence(symbol, span, jl.SymbolOccurrence.Role.REFERENCE, treeSource)
 
     private def registerDefinition(sym: Symbol, span: Span, symkinds: Set[SymbolKind], treeSource: SourceFile)(using Context) =
       val sname = sym.symbolName
@@ -568,7 +577,7 @@ object ExtractSemanticDB:
         Span(span.start)
 
       if namePresentInSource(sym, span, treeSource) || sym.isAnonymousClass then
-        registerOccurrence(sname, finalSpan, SymbolOccurrence.Role.DEFINITION, treeSource)
+        registerOccurrence(sname, finalSpan, jl.SymbolOccurrence.Role.DEFINITION, treeSource)
       if !sym.is(Package) then
         registerSymbol(sym, symkinds)
 

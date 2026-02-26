@@ -672,27 +672,15 @@ object Build {
     recur(lines, false)
   }
 
-  val semanticdbScalaPBVersion = "0.11.20"
   val semanticdbProtobufVersion = "4.33.5"
-  // ScalaPB 0.11.20 (_3) brings scala-collection-compat_3 transitively.
-  // This build still has _2.13 artifacts in the same resolution scope, and sbt
-  // fails on mixed suffixes (_3 vs _2.13) for scala-collection-compat.
-  // Pin _2.13 and exclude _3 until the remaining for3Use2_13 deps are removed.
-  val semanticdbCollectionCompatVersion = "2.13.0"
 
   def semanticdbCodegenSettings: Seq[Setting[_]] = Seq(
     PB.additionalDependencies := Nil,
-    libraryDependencies ++= Seq(
-      "org.scala-lang.modules" % "scala-collection-compat_2.13" % semanticdbCollectionCompatVersion,
-      ("com.thesamet.scalapb" %% "scalapb-runtime" % semanticdbScalaPBVersion % "protobuf")
-        .exclude("org.scala-lang.modules", "scala-collection-compat_3"),
-      ("com.thesamet.scalapb" %% "scalapb-runtime" % semanticdbScalaPBVersion)
-        .exclude("org.scala-lang.modules", "scala-collection-compat_3"),
-    ),
+    libraryDependencies += "com.google.protobuf" % "protobuf-javalite" % semanticdbProtobufVersion,
     Compile / PB.protocVersion := s"com.google.protobuf:protoc:$semanticdbProtobufVersion",
     Compile / PB.protoSources := Seq(baseDirectory.value / "src" / "main" / "protobuf"),
     Compile / PB.targets := Seq(
-      scalapb.gen() -> ((Compile / sourceManaged).value / "semanticdb-generated")
+      (PB.gens.java(semanticdbProtobufVersion), Seq("lite")) -> ((Compile / sourceManaged).value / "semanticdb-javalite")
     ),
   )
 
@@ -2114,9 +2102,7 @@ object Build {
         "io.get-coursier" % "interface" % "1.0.18",
         "org.scalameta" % "mtags-interfaces" % mtagsVersion,
         "com.google.guava" % "guava" % "33.2.1-jre",
-        // Keep compat suffix consistent with compiler settings above.
-        ("com.thesamet.scalapb" %% "scalapb-runtime" % semanticdbScalaPBVersion)
-          .exclude("org.scala-lang.modules", "scala-collection-compat_3"),
+        "com.google.protobuf" % "protobuf-javalite" % semanticdbProtobufVersion,
       ),
       libraryDependencies += ("org.scalameta" % s"mtags-shared_${ScalaLibraryPlugin.scala2Version}" % mtagsVersion % SourceDeps),
       ivyConfigurations += SourceDeps.hide,
