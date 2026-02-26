@@ -40,6 +40,7 @@ import sbtbuildinfo.BuildInfoPlugin
 import sbtbuildinfo.BuildInfoPlugin.autoImport._
 import sbttastymima.TastyMiMaPlugin
 import sbttastymima.TastyMiMaPlugin.autoImport._
+import sbtprotoc.ProtocPlugin.autoImport.PB
 
 import scala.util.Properties.isJavaAtLeast
 
@@ -652,6 +653,9 @@ object Build {
 
   /** Insert UnsafeNulls Import after package */
   def insertUnsafeNullsImport(lines: List[String]): List[String] = {
+    // Don't prepend duplicated imports.
+    if (lines.exists(_.trim == "import scala.language.unsafeNulls")) return lines
+
     def recur(ls: List[String], foundPackage: Boolean): List[String] = ls match {
       case l :: rest =>
         val lt = l.trim()
@@ -668,32 +672,29 @@ object Build {
     recur(lines, false)
   }
 
-  /** replace imports of `com.google.protobuf.*` with compiler implemented version */
-  def replaceProtobuf(lines: List[String]): List[String] = {
-    def recur(ls: List[String]): List[String] = ls match {
-      case l :: rest =>
-        val lt = l.trim()
-        if (lt.isEmpty || lt.startsWith("package ") || lt.startsWith("import ")) {
-          val newLine =
-            if (lt.startsWith("import com.google.protobuf.")) {
-              if (lt == "import com.google.protobuf.CodedInputStream") {
-                "import dotty.tools.dotc.semanticdb.internal.SemanticdbInputStream as CodedInputStream"
-              } else if (lt == "import com.google.protobuf.CodedOutputStream") {
-                "import dotty.tools.dotc.semanticdb.internal.SemanticdbOutputStream as CodedOutputStream"
-              } else {
-                l
-              }
-            } else {
-              l
-            }
-          newLine :: recur(rest)
-        } else {
-          ls // don't check rest of file
-        }
-      case _ => ls
-    }
-    recur(lines)
-  }
+  val semanticdbScalaPBVersion = "0.11.20"
+  val semanticdbProtobufVersion = "4.33.5"
+  // ScalaPB 0.11.20 (_3) brings scala-collection-compat_3 transitively.
+  // This build still has _2.13 artifacts in the same resolution scope, and sbt
+  // fails on mixed suffixes (_3 vs _2.13) for scala-collection-compat.
+  // Pin _2.13 and exclude _3 until the remaining for3Use2_13 deps are removed.
+  val semanticdbCollectionCompatVersion = "2.13.0"
+
+  def semanticdbCodegenSettings: Seq[Setting[_]] = Seq(
+    PB.additionalDependencies := Nil,
+    libraryDependencies ++= Seq(
+      "org.scala-lang.modules" % "scala-collection-compat_2.13" % semanticdbCollectionCompatVersion,
+      ("com.thesamet.scalapb" %% "scalapb-runtime" % semanticdbScalaPBVersion % "protobuf")
+        .exclude("org.scala-lang.modules", "scala-collection-compat_3"),
+      ("com.thesamet.scalapb" %% "scalapb-runtime" % semanticdbScalaPBVersion)
+        .exclude("org.scala-lang.modules", "scala-collection-compat_3"),
+    ),
+    Compile / PB.protocVersion := s"com.google.protobuf:protoc:$semanticdbProtobufVersion",
+    Compile / PB.protoSources := Seq(baseDirectory.value / "src" / "main" / "protobuf"),
+    Compile / PB.targets := Seq(
+      scalapb.gen() -> ((Compile / sourceManaged).value / "semanticdb-generated")
+    ),
+  )
 
   def insertClasspathInArgs(args: List[String], cp: String): List[String] = {
     val (beforeCp, fromCp) = args.span(_ != "-classpath")
@@ -1553,6 +1554,7 @@ object Build {
   /* Configuration of the org.scala-lang:scala3-compiler_3:*.**.**-nonbootstrapped project */
   lazy val `scala3-compiler-nonbootstrapped` = project.in(file("compiler"))
     .dependsOn(`scala3-interfaces`, `tasty-core-nonbootstrapped`, `scala3-library-nonbootstrapped`)
+    .settings(semanticdbCodegenSettings)
     .settings(
       name          := "scala3-compiler-nonbootstrapped",
       moduleName    := "scala3-compiler",
@@ -1683,6 +1685,7 @@ object Build {
   lazy val `scala3-compiler-bootstrapped` = project.in(file("compiler"))
     .dependsOn(`scala3-interfaces`, `tasty-core-bootstrapped`, `scala3-library-bootstrapped`)
     .settings(publishSettings)
+    .settings(semanticdbCodegenSettings)
     .settings(
       name          := "scala3-compiler-bootstrapped",
       moduleName    := "scala3-compiler",
@@ -2111,6 +2114,9 @@ object Build {
         "io.get-coursier" % "interface" % "1.0.18",
         "org.scalameta" % "mtags-interfaces" % mtagsVersion,
         "com.google.guava" % "guava" % "33.2.1-jre",
+        // Keep compat suffix consistent with compiler settings above.
+        ("com.thesamet.scalapb" %% "scalapb-runtime" % semanticdbScalaPBVersion)
+          .exclude("org.scala-lang.modules", "scala-collection-compat_3"),
       ),
       libraryDependencies += ("org.scalameta" % s"mtags-shared_${ScalaLibraryPlugin.scala2Version}" % mtagsVersion % SourceDeps),
       ivyConfigurations += SourceDeps.hide,
@@ -2144,7 +2150,7 @@ object Build {
           val mtagsSharedSources = (targetDir ** "*.scala").get.toSet
           mtagsSharedSources.foreach(f => {
             val lines = IO.readLines(f)
-            val substitutions = (replaceProtobuf(_)) andThen (insertUnsafeNullsImport(_))
+            val substitutions = insertUnsafeNullsImport(_)
             IO.writeLines(f, substitutions(lines))
           })
           mtagsSharedSources
