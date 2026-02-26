@@ -169,7 +169,7 @@ private[semanticdb] object ExtractSemanticDB:
       language = Language.SCALA,
       uri = Tools.mkURIstring(Paths.get(relPath(source, sourceRoot))),
       text = if semanticdbText then String(source.content) else "",
-      md5 = internal.MD5.compute(String(source.content)),
+      md5 = MD5.compute(String(source.content)),
       symbols = symbolInfos,
       occurrences = occurrences,
       synthetics = synthetics,
@@ -177,9 +177,8 @@ private[semanticdb] object ExtractSemanticDB:
     val docs = TextDocuments(List(doc))
     val out = Files.newOutputStream(outpath)
     try
-      val stream = internal.SemanticdbOutputStream.newInstance(out)
-      docs.writeTo(stream)
-      stream.flush()
+      docs.writeTo(out)
+      out.flush()
     finally
       out.close()
   end write
@@ -190,13 +189,11 @@ private[semanticdb] object ExtractSemanticDB:
   ): Unit =
     Using.Manager { use =>
       val in = use(Files.newInputStream(outpath))
-      val sin = internal.SemanticdbInputStream.newInstance(in)
-      val docs = TextDocuments.parseFrom(sin)
+      val docs = TextDocuments.parseFrom(in)
 
       val out = use(Files.newOutputStream(outpath))
-      val sout = internal.SemanticdbOutputStream.newInstance(out)
-      TextDocuments(docs.documents.map(_.withDiagnostics(diagnostics))).writeTo(sout)
-      sout.flush()
+      TextDocuments(docs.documents.map(_.withDiagnostics(diagnostics))).writeTo(out)
+      out.flush()
     } match
       case Failure(ex) => // failed somehow, should we say something?
       case Success(_) => // success to update semanticdb, say nothing

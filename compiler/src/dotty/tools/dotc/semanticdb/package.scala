@@ -4,14 +4,11 @@ import java.io.ByteArrayOutputStream
 import dotty.tools.dotc.ast.tpd
 import dotty.tools.dotc.core.Contexts.Context
 import dotty.tools.dotc.core.Symbols.Symbol
-import dotty.tools.dotc.semanticdb.internal.MD5
-import dotty.tools.dotc.semanticdb.internal.SemanticdbOutputStream
 
 /**
  * Public API of the SemanticDB package.
  *
- * The `generated` package is NOT a public API, and neither is the `internal` package.
- * (However, in practice `internal` is used by the presentation-compiler to avoid depending on a protobuf runtime... see `replaceProtobuf` in project/Build.scala)
+ * Generated protobuf model classes are implementation details and not public API.
  */
 package object semanticdb {
   /** Compiler pass to write SemanticDB information about code. */
@@ -34,9 +31,7 @@ package object semanticdb {
       occurrences = extractor.occurrences.toList
     )
     val byteStream = new ByteArrayOutputStream()
-    val out = SemanticdbOutputStream.newInstance(byteStream)
-    document.writeTo(out)
-    out.flush()
+    document.writeTo(byteStream)
     byteStream.toByteArray.nn
 
   /** Pretty-prints a SemanticDB `TextDocument` provided in its serialized form. Intended for testing and debugging. */

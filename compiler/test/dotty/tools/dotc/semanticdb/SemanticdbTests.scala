@@ -19,7 +19,6 @@ import dotty.BootstrappedOnlyTests
 import dotty.tools.dotc.Main
 import dotty.tools.dotc.semanticdb
 import dotty.tools.dotc.semanticdb.Scala3.given
-import dotty.tools.dotc.semanticdb.internal.SemanticdbOutputStream
 import dotty.tools.dotc.util.SourceFile
 
 @main def updateExpect =
@@ -153,9 +152,7 @@ end SemanticdbTests
 object SemanticdbTests:
   def printTextDocument(doc: TextDocument): String =
     val byteStream = new ByteArrayOutputStream()
-    val out = SemanticdbOutputStream.newInstance(byteStream)
-    doc.writeTo(out)
-    out.flush()
+    doc.writeTo(byteStream)
     semanticdb.textDocumentPrettyPrint(byteStream.toByteArray.nn)
   end printTextDocument
 end SemanticdbTests
