@@ -213,7 +213,7 @@ object CompilationUnit {
             case _ =>
         case _ =>
       for annot <- tree.symbol.annotations do
-        if annot.isMacroAnnotation then
+        if annot.symbol.exists && annot.isMacroAnnotation then
           ctx.compilationUnit.hasMacroAnnotations = true
       traverseChildren(tree)
     }
