@@ -229,6 +229,38 @@ class Inliner(val call: tpd.Tree)(using Context):
   private val inlineCallPrefix =
      qualifier(methPart).orElse(This(inlinedMethod.enclosingClass.asClass))
 
+  /** Skolems created from typing this call tree.
+   *
+   *  ```
+   *  trait Ctx[F[_]]
+   *  trait Mon[F[_]]:
+   *    type Context <: Ctx[F]
+   *  inline def async[F[_]](using am: Mon[F]): Wrap[F, am.Context] = ???
+   *  ```
+   *
+   *  When TypeAssigner types `async(...)`, it skolemizes unstable `am` in the
+   *  dependent result type, and the call tree is typed as `Wrap[F, ?1.Context]`.
+   *
+   *  Later, the inliner expands the method body and replace `am` by a proxy `am$proxy`.
+   *  Then `new Wrap[F, am.Context]` becomes `new Wrap[F, am$proxy.Context]`.
+   *  If `am$proxy` only has type `Mon[F]`, this prefix is not connected to the
+   *  `?1` in `Wrap[F, ?1.Context`, then it leads to type mismatch error.
+   *  See #26153 and #26031.
+   *
+   *  To avoid this problem, type `am$proxy` as the skolem　`$1` created by typer.
+   *  Then the expanded tree and the call types match.
+   */
+  private val callValueSkolemss: List[List[Option[SkolemType]]] =
+    def loop(tree: Tree, skolemss: List[List[Option[SkolemType]]]): List[List[Option[SkolemType]]] = tree match
+      case app @ Apply(fn, args) =>
+        val mapping = app.getAttachment(TypeAssigner.SkolemizedArgs).getOrElse(Map.empty)
+        loop(fn, args.map(mapping.get) :: skolemss)
+      case TypeApply(fn, _) =>
+        loop(fn, skolemss)
+      case _ =>
+        skolemss
+    loop(call, Nil)
+
   // Make sure all type arguments to the call are fully determined,
   // but continue if that's not achievable (or else i7459.scala would crash).
   for arg <- callTypeArgs do
@@ -279,9 +311,11 @@ class Inliner(val call: tpd.Tree)(using Context):
    *  @param formal      the type of the parameter
    *  @param arg0        the argument corresponding to the parameter
    *  @param buf         the buffer to which the definition should be appended
+   *  @param skolem      optional skolem from the call's dependent result type.
+   *                     If present, use it as the proxy type.
    */
   private[inlines] def paramBindingDef(name: Name, formal: Type, arg0: Tree,
-                              buf: DefBuffer)(using Context): ValOrDefDef = {
+                              buf: DefBuffer, skolem: Option[SkolemType] = None)(using Context): ValOrDefDef = {
     val isByName = formal.dealias.isInstanceOf[ExprType]
     val arg =
       def dropNameArg(arg: Tree): Tree = arg match
@@ -297,10 +331,17 @@ class Inliner(val call: tpd.Tree)(using Context):
           dropNameArg(arg0)
     val argtpe = arg.tpe.dealiasKeepAnnots.translateFromRepeated(toArray = false)
     val argIsBottom = argtpe.isBottomTypeAfterErasure
-    val bindingType =
+    val baseBindingType =
       if argIsBottom then formal
       else if isByName then ExprType(argtpe.widen)
       else argtpe.widen
+    // If the call result type used a skolem for this argument, use the same skolem
+    // as the proxy type. `?1` has `argtpe.widen` as its underlying type.
+    val bindingType = skolem match
+      case Some(sk) if !argIsBottom =>
+        if isByName then ExprType(sk) else sk
+      case _ => baseBindingType
+
     var bindingFlags: FlagSet = InlineProxy
     if formal.widenExpr.hasAnnotation(defn.InlineParamAnnot) then
       bindingFlags |= Inline
@@ -313,6 +354,10 @@ class Inliner(val call: tpd.Tree)(using Context):
       var newArg = arg.changeOwner(ctx.owner, boundSym)
       if bindingFlags.is(Inline) && argIsBottom then
         newArg = Typed(newArg, TypeTree(formal.widenExpr)) // type ascribe RHS to avoid type errors in expansion. See i8612.scala
+      else if bindingType ne baseBindingType then
+        newArg =
+          if isByName then newArg.cast(bindingType.widenExpr)
+          else newArg.cast(bindingType)
       if isByName then DefDef(boundSym, newArg)
       else ValDef(boundSym, newArg, inferred = true)
     }.withSpan(boundSym.span)
@@ -328,6 +373,7 @@ class Inliner(val call: tpd.Tree)(using Context):
   private def computeParamBindings(
       tp: Type, targs: List[Tree],
       argss: List[List[Tree]], formalss: List[List[Type]],
+      skolemss: List[List[Option[SkolemType]]],
       buf: DefBuffer): Boolean =
     tp match
       case tp: PolyType =>
@@ -335,24 +381,27 @@ class Inliner(val call: tpd.Tree)(using Context):
           paramSpan(name) = arg.span
           paramBinding(name) = arg.tpe.stripTypeVar
         }
-        computeParamBindings(tp.resultType, targs.drop(tp.paramNames.length), argss, formalss, buf)
+        computeParamBindings(tp.resultType, targs.drop(tp.paramNames.length), argss, formalss, skolemss, buf)
       case tp: MethodType =>
         if argss.isEmpty then
           report.error(em"missing arguments for inline method $inlinedMethod", call.srcPos)
           false
         else
-          tp.paramNames.lazyZip(formalss.head).lazyZip(argss.head).foreach { (name, formal, arg) =>
+          val skolems = skolemss.headOption.getOrElse(List.fill(argss.head.length)(None))
+          tp.paramNames.lazyZip(formalss.head).lazyZip(argss.head).lazyZip(skolems).foreach {
+            (name, formal, arg, skolem) =>
             paramSpan(name) = arg.span
             paramBinding(name) = arg.tpe.dealias match
               case _: SingletonType if isIdempotentPath(arg) =>
                 arg.tpe
               case _ =>
-                paramBindingDef(name, formal, arg, buf).symbol.termRef
+                paramBindingDef(name, formal, arg, buf, skolem).symbol.termRef
           }
-          computeParamBindings(tp.resultType, targs, argss.tail, formalss.tail, buf)
+          computeParamBindings(tp.resultType, targs, argss.tail, formalss.tail, skolemss.tail, buf)
       case _ =>
         assert(targs.isEmpty)
         assert(argss.isEmpty)
+        assert(skolemss.isEmpty)
         true
 
   /** The number of enclosing classes of this class, plus one */
@@ -666,6 +715,7 @@ class Inliner(val call: tpd.Tree)(using Context):
       if !computeParamBindings(
           inlinedMethod.info, callTypeArgs,
           mappedCallValueArgss, paramTypess(call, Nil),
+          callValueSkolemss,
           paramBindingsBuf)
       then
         return (Nil, EmptyTree)
@@ -703,10 +753,10 @@ class Inliner(val call: tpd.Tree)(using Context):
             if opaqueProxies.isEmpty then StopAt.Static else StopAt.Package
           def apply(t: Type) = t match {
             case t: ThisType => thisProxy.getOrElse(t.cls, t)
-            case t: TypeRef => paramProxy.getOrElse(t, mapOver(t))
+            case t: TypeRef => paramProxy.get(t).getOrElse(mapOver(t))
             case t: SingletonType =>
               if t.termSymbol.isAllOf(InlineParam) then apply(t.widenTermRefExpr)
-              else paramProxy.getOrElse(t, mapOver(t))
+              else paramProxy.get(t).getOrElse(mapOver(t))
             case t => mapOver(t)
           }
         },
