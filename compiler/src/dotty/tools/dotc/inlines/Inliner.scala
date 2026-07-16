@@ -338,7 +338,7 @@ class Inliner(val call: tpd.Tree)(using Context):
     // If the call result type used a skolem for this argument, use the same skolem
     // as the proxy type. `?1` has `argtpe.widen` as its underlying type.
     val bindingType = skolem match
-      case Some(sk) if !argIsBottom =>
+      case Some(sk) if !argIsBottom && sk.info.abstractTypeMembers.nonEmpty =>
         if isByName then ExprType(sk) else sk
       case _ => baseBindingType
 
